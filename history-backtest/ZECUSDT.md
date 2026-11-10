@@ -396,3 +396,8 @@ Decision: INCONCLUSIVE. Further data collection and validation are required. Thi
 - V3 and V4 had no valid signals in this sample; their isolated-mode results are zero-trade results, not evidence of poor performance.
 - Results do not establish profitability or robustness; do not use as live-entry advice.
 - Decision: INCONCLUSIVE pending longer and out-of-sample validation.
+
+
+## Correction note — 2026-11-11
+
+The earlier one-day run recorded above did not correctly enforce the one-open-position-at-a-time rule across overlapping signals. Its trade counts and PnL are therefore RETRACTED and must not be used for strategy evaluation. The seven-day run appended below was re-simulated with the single-position constraint enforced. The one-day period must be rerun under the corrected engine before it can be considered valid.
