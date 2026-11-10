@@ -9,6 +9,7 @@ The goal is to define trading rules precisely, test them against historical mark
 | File | Purpose |
 |---|---|
 | [backtest-skill.md](backtest-skill.md) | Complete Parabolic SAR Follow Trend backtesting protocol |
+| [history-backtest/README.md](history-backtest/README.md) | Rules for saving completed backtest reports by symbol |
 
 ## Strategy covered
 
@@ -36,6 +37,7 @@ Read [backtest-skill.md](backtest-skill.md) before collecting data or running a 
 6. Separate gross results from net results after fees, slippage, and funding.
 7. Preserve raw trade logs so every reported metric can be audited.
 8. Never invent results or claim a backtest was run when only a plan or specification exists.
+9. **After a backtest has actually been executed, save its report as `history-backtest/{SYMBOL}.md`**, using the uppercase market symbol, for example `history-backtest/BTCUSDT.md`. Follow [history-backtest/README.md](history-backtest/README.md).
 
 ## Backtest status
 
@@ -54,8 +56,15 @@ A positive short-period result is not proof that a strategy is profitable or rob
 ```text
 .
 ├── README.md
-└── backtest-skill.md
+├── backtest-skill.md
+└── history-backtest/
+    ├── README.md
+    ├── BTCUSDT.md
+    ├── ETHUSDT.md
+    └── {SYMBOL}.md
 ```
+
+The symbol files shown above are examples of the naming convention; create a report file only when that symbol's backtest has actually been run.
 
 ## Disclaimer
 
