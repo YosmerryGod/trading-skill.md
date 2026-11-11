@@ -257,3 +257,130 @@ Sebelum angka-angka ini dipakai untuk memilih parameter final:
 7. Uji ulang filter volatilitas tanpa look-ahead bias. Filter high-low harian penuh hanya boleh dipakai sebagai eksperimen historis, bukan sinyal yang tersedia pada awal hari.
 
 Jangan menggabungkan hasil lama dan hasil audit ulang dalam satu tabel tanpa label versi. Pertahankan hasil lama sebagai arsip dan beri label jelas jika hasil telah dihitung ulang.
+
+
+---
+
+# 16. Audit Ulang TP 7% / SL 5% — September 1 sampai November 10, 2026
+
+<badge> AUDIT_RUN_V1 — PROVISIONAL </badge>
+
+Audit ini menjalankan satu simulasi berkelanjutan dari 2026-09-01 00:00 UTC sampai 2026-11-11 00:00 UTC. Posisi tidak di-reset pada batas pergantian bulan. Konfigurasi yang dipakai: notional 100 USDT, TP 7%, SL 5%, filter volatilitas 5–30%, PSAR 0.01/0.10, trend 1H, entry 5M.
+
+## 16.1 Data dan metode audit
+
+| Data | Jumlah |
+|---|---:|
+| Candle 5M | 22,464 |
+| Candle 1H | 1,872 |
+| Candle 1D | 78 |
+| Funding records | 707 |
+| Candle 5M yang menyentuh level TP/SL | 15 |
+| Candle 5M yang diverifikasi dengan 1M | 15 |
+| Exit ambigu pada candle 1M | 0 |
+
+- PSAR dihitung dengan recurrence Parabolic SAR (Wilder), step 0.01 dan maximum 0.10. Inisialisasi arah menggunakan dua candle pertama pada data warm-up; inisialisasi ini masih perlu dicocokkan dengan implementasi/library PSAR referensi yang akan dipakai bot.
+- Warm-up data dimulai 2026-08-25 agar indikator sudah memiliki data sebelum periode audit.
+- Entry menggunakan close candle sinyal 5M; trend menggunakan candle 1H terakhir yang telah selesai.
+- Saat posisi terbuka, sinyal lain diabaikan sampai TP/SL tercapai.
+- Setelah exit, arah yang sama tetap memerlukan reset PSAR dan fresh cross. Sinyal fresh berlawanan arah pada close candle 5M yang sama boleh dievaluasi sesuai aturan strategi utama.
+- Untuk setiap candle 5M yang rentangnya menyentuh TP/SL, lima candle 1M di dalamnya diperiksa untuk menentukan exit pertama. Seluruh 15 exit terkonfirmasi; tidak ada candle 1M yang menyentuh TP dan SL sekaligus.
+- Fee dihitung dengan asumsi 0.05% per sisi atas notional entry dan notional exit aktual. Funding dihitung dari quantity posisi, mark price, funding rate, dan timestamp funding saat posisi masih terbuka.
+- Filter volatilitas memakai high-low candle harian penuh. Ini tetap memiliki look-ahead bias dan hanya eksperimen historis.
+- Slippage belum dimodelkan.
+
+## 16.2 Hasil keseluruhan audit
+
+| Metrik | Hasil |
+|---|---:|
+| Periode | 2026-09-01 sampai 2026-11-10 UTC |
+| Hari eligible | 51 |
+| Trade tertutup | 15 |
+| Win / Loss | 8 / 7 |
+| Win rate | 53.33% |
+| TP hit / SL hit | 8 / 7 |
+| Gross profit | +56.0000 USDT |
+| Gross loss | -35.0000 USDT |
+| Gross PnL | +21.0000 USDT |
+| Fee | -1.4995 USDT |
+| Funding | +0.8366 USDT |
+| **Net PnL realized** | **+20.3371 USDT** |
+| Profit factor | 1.60 |
+| Loss streak terpanjang | 2 |
+| Pause 24 jam | 0 kali |
+| Max drawdown realized | 10.4407 USDT |
+| Posisi terbuka di akhir | LONG |
+| Entry posisi terbuka | 0.07982 |
+| Waktu entry posisi terbuka | 2026-11-10 17:00 UTC |
+| Mark/close terakhir | 0.08009 |
+| Unrealized PnL estimasi | +0.3383 USDT |
+| Slippage | Belum dihitung |
+| Return akun | N/A — modal akun awal tidak ditetapkan |
+
+Max drawdown di atas dihitung dari cumulative realized net PnL per trade, dimulai dari 0 USDT; belum memasukkan floating PnL posisi terbuka. Return akun tidak dihitung karena notional posisi 100 USDT bukan definisi modal akun awal.
+
+## 16.3 Hasil per bulan
+
+Trade dikelompokkan berdasarkan **waktu exit**, bukan waktu entry. Posisi yang melintasi batas bulan tetap dibawa.
+
+| Bulan exit | Trade | Win | Loss | Net PnL |
+|---|---:|---:|---:|---:|
+| September 2026 | 3 | 2 | 1 | +8.4995 USDT |
+| Oktober 2026 | 9 | 5 | 4 | +15.3300 USDT |
+| November 1–10, 2026 | 3 | 1 | 2 | -3.4923 USDT |
+| **Total** | **15** | **8** | **7** | **+20.3371 USDT** |
+
+## 16.4 Trade ledger audit
+
+Semua waktu di bawah menggunakan UTC. Fee ditampilkan sebagai nilai biaya positif pada kolomnya; Net sudah mengurangkan fee.
+
+| No. | Arah | Entry UTC | Exit UTC | Exit | Gross | Fee | Funding | Net |
+|---:|---|---|---|---|---:|---:|---:|---:|
+| 1 | LONG | Sep 18 05:00 | Sep 19 14:14 | TP | +7.00 | 0.1035 | -0.0413 | +6.8552 |
+| 2 | SHORT | Sep 20 10:00 | Sep 21 04:02 | SL | -5.00 | 0.1025 | +0.0255 | -5.0770 |
+| 3 | LONG | Sep 21 20:00 | Sep 27 04:01 | TP | +7.00 | 0.1035 | -0.1752 | +6.7213 |
+| 4 | LONG | Sep 28 23:00 | Oct 01 13:10 | SL | -5.00 | 0.0975 | -0.0714 | -5.1689 |
+| 5 | LONG | Oct 01 22:00 | Oct 07 02:02 | SL | -5.00 | 0.0975 | -0.1743 | -5.2718 |
+| 6 | SHORT | Oct 11 15:00 | Oct 12 03:42 | TP | +7.00 | 0.0965 | -0.3884 | +6.5151 |
+| 7 | SHORT | Oct 12 23:00 | Oct 14 12:32 | TP | +7.00 | 0.0965 | -0.0316 | +6.8719 |
+| 8 | LONG | Oct 20 07:00 | Oct 20 09:10 | TP | +7.00 | 0.1035 | +0.2729 | +7.1694 |
+| 9 | LONG | Oct 20 14:00 | Oct 21 13:08 | SL | -5.00 | 0.0975 | +1.8322 | -3.2653 |
+| 10 | SHORT | Oct 21 19:00 | Oct 22 05:17 | SL | -5.00 | 0.1025 | -0.3773 | -5.4798 |
+| 11 | LONG | Oct 25 23:00 | Oct 26 00:45 | TP | +7.00 | 0.1035 | +0.0302 | +6.9267 |
+| 12 | LONG | Oct 30 19:00 | Oct 31 09:09 | TP | +7.00 | 0.1035 | +0.1362 | +7.0327 |
+| 13 | SHORT | Nov 01 21:00 | Nov 02 17:46 | TP | +7.00 | 0.0965 | -0.6020 | +6.3015 |
+| 14 | LONG | Nov 05 00:00 | Nov 05 15:15 | SL | -5.00 | 0.0975 | +0.2346 | -4.8629 |
+| 15 | LONG | Nov 08 16:00 | Nov 08 21:56 | SL | -5.00 | 0.0975 | +0.1666 | -4.9309 |
+
+## 16.5 Perbandingan dengan arsip simulasi lama
+
+Hasil lama untuk TP 7% / SL 5% yang tersimpan sebelumnya:
+- September: 9 trade, net +26.02 USDT.
+- Oktober: 39 trade, net +63.20 USDT.
+- November 1–10: 15 trade, net -3.23 USDT.
+- Total arsip lama: +85.99 USDT.
+
+Audit berkelanjutan ini menghasilkan 15 trade tertutup dan net +20.3371 USDT. Perbedaan yang besar berarti hasil lama dan hasil audit tidak boleh dicampur atau dianggap setara. Implementasi sumber simulasi lama tidak tersedia untuk membuktikan penyebab persisnya; kemungkinan perbedaan berasal dari pengelolaan posisi, reset sinyal, entry ulang, dan/atau cara periode dipisahkan. Hasil arsip lama tetap dipertahankan sebagai legacy, bukan dihapus.
+
+## 16.6 Status audit dan pekerjaan tersisa
+
+**Status: INCOMPLETE_DATA — AUDIT_RUN_V1.**
+
+Yang sudah diperiksa:
+- [x] Periode kontinu, posisi tidak di-reset di batas bulan.
+- [x] Aturan maksimal satu posisi.
+- [x] Reset PSAR untuk re-entry searah.
+- [x] Evaluasi fresh signal berlawanan setelah exit pada candle 5M yang sama.
+- [x] 15 candle kandidat exit diverifikasi menggunakan 1M.
+- [x] Fee asumsi dan funding historis dihitung.
+
+Yang masih perlu dilakukan:
+- [ ] Cocokkan inisialisasi dan output PSAR dengan library/referensi implementasi yang akan dipakai bot.
+- [ ] Audit seluruh event entry dan state reset dengan log sinyal per candle.
+- [ ] Tambahkan model slippage yang realistis.
+- [ ] Uji filter volatilitas tanpa look-ahead bias.
+- [ ] Validasi fee dan funding terhadap spesifikasi serta data exchange untuk setiap fill.
+- [ ] Hitung risiko margin, maintenance margin, dan likuidasi setelah leverage ditentukan.
+- [ ] Jalankan ulang bila implementasi PSAR atau definisi filter volatilitas berubah.
+
+Angka audit ini adalah hasil simulasi yang lebih ketat daripada arsip lama, tetapi belum boleh dianggap hasil final atau jaminan performa live.
