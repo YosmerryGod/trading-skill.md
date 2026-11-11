@@ -114,3 +114,91 @@ Setelah posisi ditutup karena TP maupun SL, jangan langsung masuk lagi ke arah y
 ## 10. Di Luar Cakupan Dokumen Ini
 
 Filter, klasifikasi, dan eksperimen volatilitas **belum menjadi bagian dari aturan strategi ini**. Jangan menerapkan filter volatilitas atau mengelompokkan hasil berdasarkan volatilitas secara otomatis. Tambahkan aturan tersebut hanya setelah ada keputusan terpisah.
+
+## 11. Format Respons Backtest
+
+Setiap hasil backtest yang disampaikan kepada user harus menggunakan tabel yang ringkas, mudah dibandingkan, dan memakai penanda warna secara konsisten. Tampilkan ringkasan terlebih dahulu, lalu detail risiko dan kesimpulan.
+
+### 11.1 Kode warna
+
+Gunakan badge warna di antarmuka yang mendukungnya. Jika hanya Markdown/GitHub yang tersedia, gunakan emoji warna berikut:
+
+- 🟢 **Hijau**: hasil positif, profit, atau trade menang.
+- 🔴 **Merah**: hasil negatif, loss, atau drawdown.
+- 🟡 **Kuning**: peringatan, loss streak, risiko, atau data belum lengkap.
+- 🔵 **Biru**: informasi periode, modal, leverage, dan parameter.
+- ⚪ **Abu-abu**: netral, nol, tidak tersedia, atau tidak berlaku.
+
+Warna harus mencerminkan nilai sebenarnya. Jangan memberi warna hijau pada konfigurasi hanya karena nilainya paling baik jika hasilnya masih negatif.
+
+### 11.2 Ringkasan utama
+
+Tampilkan tabel perbandingan empat konfigurasi TP/SL. Gunakan data hasil backtest aktual; jangan mengisi angka contoh atau perkiraan seolah-olah hasil nyata.
+
+| TP / SL | Total Trade | Win | Loss | Win Rate | Net PnL |
+|---|---:|---:|---:|---:|---:|
+| 3% / 2% | — | — | — | — | — |
+| 5% / 3% | — | — | — | — | — |
+| 7% / 5% | — | — | — | — | — |
+| 10% / 7% | — | — | — | — | — |
+
+Aturan pewarnaan:
+- Net PnL positif: 🟢.
+- Net PnL negatif: 🔴.
+- Net PnL nol: ⚪.
+- Kolom Win dapat diberi penanda 🟢 dan Loss 🔴.
+- Win Rate ditampilkan sebagai persentase dengan jumlah trade sebagai konteks; jangan menilai win rate tanpa melihat net PnL dan jumlah trade.
+
+### 11.3 Detail modal dan risiko
+
+| Metrik | Hasil |
+|---|---:|
+| Periode backtest | — |
+| Modal awal | — |
+| Saldo akhir | — |
+| Gross PnL | — |
+| Total fee | — |
+| Total slippage | — |
+| Total funding | — |
+| Net PnL | — |
+| Max drawdown | — |
+| Loss streak terpanjang | — |
+| Jeda 24 jam terpicu | — |
+
+Gunakan 🟢 untuk saldo akhir atau Net PnL yang bertambah, 🔴 untuk penurunan atau drawdown, 🟡 untuk loss streak dan jeda trading, serta 🔵 untuk informasi parameter. Tampilkan satuan USDT atau persen dengan jelas.
+
+### 11.4 Rincian per konfigurasi dan periode
+
+Jika membandingkan periode 1 hari, 7 hari, dan 30 hari, gunakan tabel terpisah atau satu tabel yang jelas. Jangan mencampur hasil dari periode yang berbeda.
+
+| TP / SL | Periode | Trade | Win Rate | Net PnL | Max DD |
+|---|---|---:|---:|---:|---:|
+| 3% / 2% | 1 hari | — | — | — | — |
+| 3% / 2% | 7 hari | — | — | — | — |
+| 3% / 2% | 30 hari | — | — | — | — |
+
+Ulangi baris untuk konfigurasi TP/SL lainnya jika diperlukan. Sertakan rincian harian ketika user meminta atau ketika pola harian penting untuk menjelaskan hasil.
+
+### 11.5 Status kualitas data
+
+Selalu tampilkan status kualitas data:
+
+- 🟢 **DATA LENGKAP**: komponen data dan biaya yang diperlukan tersedia serta dihitung.
+- 🟡 **INCOMPLETE_DATA**: ada komponen penting yang belum tersedia atau belum dapat dihitung.
+- 🔴 **SIMULASI TIDAK VALID**: data atau proses backtest memiliki kesalahan yang membuat hasil tidak layak digunakan.
+
+Jika status `INCOMPLETE_DATA`, sebutkan dengan jelas komponen yang belum dihitung, misalnya funding, slippage, fee aktual, leverage bracket, maintenance margin, atau likuidasi. Jangan menyajikan hasil simulasi sebagai hasil final tervalidasi.
+
+### 11.6 Kesimpulan AI
+
+Setelah tabel, berikan kesimpulan singkat yang mencakup:
+
+1. Konfigurasi dengan Net PnL tertinggi.
+2. Konfigurasi dengan Win Rate tertinggi.
+3. Konfigurasi dengan Max Drawdown terendah.
+4. Apakah hasil positif atau negatif setelah biaya.
+5. Loss streak dan apakah jeda 24 jam terpicu.
+6. Keterbatasan data yang dapat memengaruhi kesimpulan.
+
+Jangan menyebut satu konfigurasi sebagai yang terbaik hanya dari Win Rate. Pertimbangkan Net PnL, drawdown, jumlah trade, dan kualitas data secara bersamaan. Jangan menjanjikan profit atau menyatakan strategi pasti berhasil.
+
