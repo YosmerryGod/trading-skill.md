@@ -1,387 +1,279 @@
 ---
 name: parabolic-sar-follow-trend-backtest
-description: Reproducibly backtest a Parabolic SAR trend-following breakout strategy on Binance USD-M Futures using 1h trend, 5m candle-close entries, 1m exit sequencing, loss-streak cooldowns, TP/SL variants, and volatility-regime comparisons.
+description: Reproducibly backtest the Parabolic SAR Follow Trend strategy on Binance USD-M perpetual futures with completed 1H trend candles, 5M close-cross signals, market-at-close fill assumptions, 1M exits, realistic costs, account compounding, cooldowns, and volatility-filter experiments.
 ---
 
 # Backtest Skill — Parabolic SAR Follow Trend
 
-## Tujuan
+## Tujuan dan sumber kebenaran
 
-Mengukur secara jujur performa strategi **Parabolic SAR Follow Trend** pada data historis Binance USDⓈ-M Futures. Skill ini wajib menjalankan simulasi kronologis dan melaporkan seluruh hasil, termasuk loss, periode tanpa trade, data yang tidak lengkap, dan keterbatasan resolusi candle.
+Mengukur performa strategi Parabolic SAR Follow Trend secara kronologis dan dapat diaudit. Laporkan hasil baik, buruk, nol trade, data tidak lengkap, liquidation, dan keterbatasan simulasi. Backtest tidak membuktikan profit masa depan.
 
-Skill ini bukan alat untuk membuktikan strategi pasti profit. Hasil historis tidak menjamin hasil masa depan.
+- Aturan strategi, data, dan perhitungan teknis dalam dokumen ini adalah acuan teknis.
+- Format respons diatur oleh `respon-ai.md`.
+- Jangan mengubah aturan secara diam-diam.
+- Jangan mengarang data atau mengklaim backtest sudah dijalankan jika baru membuat rencana.
 
-## 1. Strategi yang diuji — jangan mengubah aturan diam-diam
+## 1. Instrumen dan data
 
-### 1.1 Instrumen dan sumber data
+- Gunakan simbol Binance USDⓈ-M perpetual yang diminta pengguna. Jangan memilih simbol sendiri.
+- Jangan mencampur data spot dan perpetual.
+- Sumber utama: data resmi Binance Futures.
+- Gunakan data candle 1M, 5M, 1H, historical funding rates, leverage brackets/maintenance margin, exchange filters, dan fee information yang tersedia.
+- Simpan seluruh timestamp internal dalam UTC.
+- Catat simbol, contract type, exchange, waktu pengambilan data, periode evaluasi, endpoint/sumber, jumlah candle, gap, duplikasi, dan candle tidak lengkap.
+- Ambil data warm-up sebelum periode evaluasi untuk PSAR dan volatilitas.
+- Jika data penting tidak tersedia, tandai dan jangan mengarang nilainya.
 
-- Default instrumen: simbol Binance USDⓈ-M perpetual yang diminta pengguna. Jika pengguna belum menentukan simbol, tanyakan satu pertanyaan.
-- Sumber utama: data historis Binance Futures.
-- Simpan waktu internal dalam UTC. Tampilkan waktu lokal hanya jika zona waktu disebutkan.
-- Jangan mencampur data spot dan perpetual futures.
-- Catat simbol, contract type, exchange, waktu pengambilan data, rentang waktu, dan endpoint/sumber.
+## 2. PSAR dan filter tren
 
-### 1.2 Indikator Parabolic SAR
+### Parameter PSAR
+- Step: 0.01.
+- Maximum: 0.10.
+- Gunakan implementasi PSAR yang sama untuk semua pengujian.
+- Catat formula/library dan versinya, warm-up, initial trend, reversal handling, dan status validasi terhadap referensi.
+- Hanya gunakan candle yang telah selesai.
 
-Gunakan satu implementasi PSAR yang konsisten untuk seluruh pengujian.
+### Filter tren 1H
+Pada waktu sinyal 5M, gunakan candle 1H terakhir yang sudah selesai:
+- LONG trend jika close 1H > PSAR 1H.
+- SHORT trend jika close 1H < PSAR 1H.
+- Jika sama atau data tidak tersedia, tidak ada sinyal.
+- Candle 1H yang masih berjalan tidak boleh digunakan, walaupun hampir selesai.
+- Catat timestamp candle 1H yang digunakan. Candle completed terakhir boleh berusia 45 menit atau lebih; jangan menggantinya dengan candle yang belum close.
 
-Parameter default penelitian ini:
-- Step / acceleration factor: 0.01.
-- Maximum acceleration factor: 0.10.
+## 3. Sinyal entry 5M
 
-Jika pengguna meminta parameter lain, buat versi eksperimen baru. Jangan mengganti parameter di tengah pengujian.
+Sinyal hanya valid setelah candle 5M selesai. Kriteria adalah **close candle menyeberang PSAR**, bukan seluruh body candle harus berada di sisi lain PSAR.
 
-Catat:
-- Formula dan implementasi/library beserta versinya.
-- Parameter PSAR.
-- Warm-up candle yang digunakan.
-- Cara menangani reversal dan initial trend.
-- Apakah hasil sudah dibandingkan dengan implementasi referensi seperti Binance/TradingView. Jangan mengaku identik jika belum diverifikasi.
-
-PSAR dihitung dari candle yang sudah selesai saja. Dilarang memakai nilai high, low, atau close candle yang belum selesai.
-
-### 1.3 Filter arah tren — timeframe 1H
-
-Gunakan candle 1H terakhir yang sudah benar-benar close pada waktu sinyal 5M.
-
-- Bullish trend: close 1H terakhir > PSAR 1H terakhir.
-- Bearish trend: close 1H terakhir < PSAR 1H terakhir.
-- Jika close sama dengan PSAR atau data 1H belum tersedia: tidak ada sinyal.
-
-Jangan memakai candle 1H yang masih berjalan. Simpan timestamp candle 1H yang menjadi filter untuk setiap trade.
-
-### 1.4 Sinyal entry — timeframe 5M
-
-Sinyal baru sah setelah candle 5M selesai.
-
-**LONG**
+### LONG
 1. Filter tren 1H bullish.
-2. Candle 5M sebelumnya belum memenuhi kondisi body sepenuhnya di atas PSAR.
-3. Candle 5M sinyal memiliki seluruh body di atas PSAR terakhir: `min(open, close) > PSAR`.
-4. Ini harus merupakan breakout/cross baru, bukan setiap candle lanjutan yang tetap berada di atas PSAR.
+2. Close candle 5M sebelumnya <= nilai PSAR pada candle sebelumnya.
+3. Close candle 5M sinyal > nilai PSAR terbaru pada candle sinyal.
+4. Ini harus cross baru dari bawah/di PSAR ke atas PSAR. Candle lanjutan yang tetap close di atas PSAR bukan sinyal baru.
 
-**SHORT**
+### SHORT
 1. Filter tren 1H bearish.
-2. Candle 5M sebelumnya belum memenuhi kondisi body sepenuhnya di bawah PSAR.
-3. Candle 5M sinyal memiliki seluruh body di bawah PSAR terakhir: `max(open, close) < PSAR`.
-4. Ini harus merupakan breakout/cross baru, bukan setiap candle lanjutan yang tetap berada di bawah PSAR.
+2. Close candle 5M sebelumnya >= nilai PSAR pada candle sebelumnya.
+3. Close candle 5M sinyal < nilai PSAR terbaru pada candle sinyal.
+4. Ini harus cross baru dari atas/di PSAR ke bawah PSAR. Candle lanjutan yang tetap close di bawah PSAR bukan sinyal baru.
 
-Jika candle menyeberangi PSAR tetapi body tidak seluruhnya berada di sisi yang sesuai, jangan hitung sebagai sinyal valid.
+Sinyal harus searah filter tren 1H. LONG dan SHORT sama-sama aktif.
 
-### 1.5 Waktu entry dan fill
+### Entry execution
+- Asumsi eksekusi yang dipilih pengguna: market order segera setelah sinyal 5M terkonfirmasi pada candle close.
+- Catat close sinyal 5M dan harga fill simulasi secara terpisah.
+- Harga close sinyal bukan otomatis harga fill yang terjamin. Modelkan slippage; jika data bid/ask atau trade yang sesuai tersedia, gunakan data tersebut. Jika tidak, gunakan asumsi slippage 0.05% per sisi dan labeli sebagai estimasi.
+- Jangan memakai data yang belum tersedia pada saat entry.
+- Jika implementasi hanya memiliki OHLC dan tidak memiliki quote/tick tepat setelah close, nyatakan keterbatasan fill dengan jelas; jangan mengklaim fill persis di close.
+- Satu posisi terbuka maksimum. Jangan membuka posisi baru ketika posisi masih aktif.
 
-- Sinyal diketahui setelah candle 5M close.
-- Untuk menghindari look-ahead, entry simulasi dilakukan pada open candle 1M pertama setelah waktu close candle sinyal 5M.
-- Jika data 1M pada waktu tersebut tidak ada, tandai sinyal tidak dapat dieksekusi dan jangan mengarang harga fill.
-- Catat harga close candle sinyal 5M dan harga fill 1M secara terpisah.
-- Jangan menganggap bisa mengisi order pada harga yang sudah diketahui setelah candle close jika harga tersebut tidak lagi tersedia untuk dieksekusi.
+## 4. Re-entry, posisi aktif, dan perubahan tren
 
-### 1.6 Posisi dan aturan risiko
+- Setelah posisi ditutup, arah yang sama tidak boleh entry lagi sampai PSAR reset: LONG perlu setidaknya satu completed 5M close <= PSAR lalu fresh close cross ke atas; SHORT perlu close >= PSAR lalu fresh close cross ke bawah.
+- Aturan reset ini berlaku setelah TP, SL, atau liquidation.
+- Ketika posisi aktif, perubahan tren 1H tidak menutup posisi. Posisi tetap dikelola sampai TP, SL, liquidation, atau akhir data.
+- Flip PSAR 5M saat posisi aktif diabaikan sebagai exit signal; posisi tetap berjalan sampai exit yang ditentukan.
+- Jika posisi lama ditutup pada candle 5M yang sama dengan sinyal valid arah sebaliknya, tutup posisi lama lebih dahulu, kemudian evaluasi sinyal baru setelah posisi kosong. Sinyal baru tetap harus memenuhi filter tren dan cross baru; jangan membuat dua posisi bersamaan.
+- Sinyal yang muncul selama cooldown dilewati dan tidak boleh digunakan sebagai sinyal baru setelah cooldown selesai.
 
-- Maksimal satu posisi terbuka pada satu waktu.
-- LONG dan SHORT sama-sama diperbolehkan sesuai filter tren.
-- TP/SL dihitung dari harga fill aktual simulasi, bukan dari close sinyal.
-- Setelah posisi ditutup, cari sinyal berikutnya secara kronologis.
-- Setelah **3 kerugian beruntun**, kunci entry baru selama **24 jam sejak trade ketiga yang loss selesai**.
-- Selama cooldown, jangan membuka trade baru. Data tetap dipantau.
-- Posisi yang sudah terbuka tetap dikelola sampai TP, SL, atau akhir data. Cooldown tidak menutup posisi yang sedang berjalan.
-- Win memutus loss streak. Trade yang belum selesai di akhir dataset tidak boleh dihitung sebagai win atau loss.
-- Catat waktu mulai dan akhir cooldown, loss streak sebelum/sesudah setiap trade, serta sinyal yang dilewati karena cooldown.
+## 5. TP/SL baseline dan dinamis
 
-## 2. Variasi TP dan SL
+### Baseline fixed TP/SL
+Jalankan masing-masing konfigurasi secara independen:
+| Konfigurasi | TP | SL |
+|---|---:|---:|
+| A | 3% | 2% |
+| B | 5% | 3% |
+| C | 7% | 5% |
+| D | 10% | 7% |
 
-Jalankan keempat konfigurasi secara terpisah. Jangan menggabungkan hasilnya.
+Persentase adalah pergerakan harga underlying dari entry, bukan return margin atau ROI leverage.
 
-| Eksperimen | Take profit | Stop loss | Reward:risk nominal |
-|---|---:|---:|---:|
-| A | +3% | -2% | 1.5:1 |
-| B | +5% | -3% | 1.67:1 |
-| C | +7% | -5% | 1.4:1 |
-| D | +10% | -7% | 1.43:1 |
-
-Untuk LONG:
+LONG:
 - TP = entry × (1 + TP%).
 - SL = entry × (1 - SL%).
 
-Untuk SHORT:
+SHORT:
 - TP = entry × (1 - TP%).
 - SL = entry × (1 + SL%).
 
-Persentase di atas adalah pergerakan harga terhadap entry. Jangan menyebutnya return modal/margin atau ROI leverage. Jika PnL dolar ditampilkan, nyatakan notional, leverage, margin, dan biaya secara terpisah. Default pembanding nominal historis boleh memakai notional 100 USDT per trade, tetapi hanya jika disebutkan jelas dan tidak dianggap sebagai ukuran akun pengguna.
+TP dan SL dikunci pada saat entry. Jangan menggeser level saat posisi terbuka.
 
-## 3. Resolusi exit 1 menit — aturan wajib
+### Dynamic ATR — eksperimen tambahan
+Bukan bagian baseline awal. Jalankan hanya jika diminta setelah baseline:
+- ATR timeframe 5M, period 14, Wilder's RMA.
+- Gunakan nilai ATR dari candle 5M terakhir yang sudah selesai sebelum entry.
+- SL multiplier: 1.0, 1.5, 2.0, 2.5.
+- TP Risk/Reward: 1:1, 1:1.5, 1:2, 1:3.
+- Total 16 kombinasi.
+- Tidak ada maximum TP/SL cap.
+- Level TP/SL ditetapkan saat entry dan tidak berubah selama posisi aktif.
+- Simpan hasil setiap kombinasi terpisah; jangan hanya menyimpan kombinasi yang profit.
 
-**Jangan menentukan urutan TP/SL dari candle 5M.** Entry memakai sinyal 5M, tetapi pemantauan exit harus menggunakan candle 1M.
+## 6. Account, sizing, dan compounding
 
-Setelah entry:
-1. Baca candle 1M secara berurutan mulai dari candle pertama setelah fill.
-2. Periksa high/low candle 1M terhadap level TP dan SL sesuai arah posisi.
-3. Jika hanya TP tersentuh, tutup sebagai TP.
-4. Jika hanya SL tersentuh, tutup sebagai SL.
-5. Jika satu candle 1M menyentuh TP dan SL sekaligus, urutan intramenit tidak diketahui dari OHLC. Gunakan asumsi konservatif **SL lebih dulu**, lalu beri label `AMBIGUOUS_1M_SL_FIRST`.
-6. Jangan menyimpulkan urutan sebenarnya dari open/close candle 1M. OHLC 1M tetap tidak menunjukkan tick-by-tick path.
-7. Jika pengguna membutuhkan kepastian urutan intramenit, jelaskan bahwa diperlukan trade/tick data atau data dengan resolusi lebih tinggi. Jangan menyebut 1M sebagai bukti urutan yang pasti.
-8. Jika ada gap melewati SL/TP, jangan mengasumsikan fill pada level yang tidak tersedia. Gunakan harga open yang dapat dieksekusi sesuai aturan simulasi dan tandai gap/slippage.
-9. Jika data 1M hilang selama posisi terbuka, tandai trade sebagai `DATA_GAP`; jangan menebak TP/SL mana yang lebih dulu. Keluarkan trade tersebut dari metrik final yang membutuhkan urutan exit pasti, tetapi laporkan jumlah dan detailnya.
+Asumsi akun baseline yang disetujui:
+- Starting balance: 100 USDT.
+- Leverage: 3x.
+- Margin mode: Cross Margin.
+- Gunakan 100% available account balance sebagai initial margin per trade.
+- Initial notional pada saldo 100 USDT: 300 USDT.
+- Compounding: ukuran posisi berikutnya dihitung dari saldo akun terbaru.
+- Maksimal satu posisi terbuka.
+- Sizing aktual tetap harus mematuhi quantity step, tick size, minimum notional, margin availability, dan exchange filters.
+- Jika saldo/margin/quantity tidak cukup untuk memenuhi aturan minimum order Binance, hentikan simulasi pada waktu tersebut dan tandai `INSUFFICIENT_BALANCE`. Jangan mengecilkan order diam-diam.
+- Catat saldo sebelum trade, margin, notional, quantity, leverage, realized PnL, dan saldo setelah trade.
+- Jangan menganggap leverage mengubah persentase pergerakan harga TP/SL.
 
-Catat untuk setiap trade:
-- Waktu entry, harga sinyal, harga fill.
-- Level TP dan SL.
-- Waktu sentuh pertama yang teramati pada 1M.
-- Harga exit simulasi.
-- Hasil: TP / SL / AMBIGUOUS_1M_SL_FIRST / DATA_GAP / OPEN_AT_END.
-- Jumlah candle 1M sampai exit.
-- Apakah TP dan SL sama-sama tersentuh dalam satu candle 1M.
-- Timestamp candle 1M yang menentukan exit.
+## 7. Fees, slippage, funding, dan liquidation
 
-## 4. Pengukuran volatilitas
+### Fee
+- Gunakan taker fee 0.05% per sisi sebagai asumsi pengguna untuk baseline jika fee akun aktual tidak tersedia.
+- Fee ini adalah asumsi model, bukan klaim bahwa akun Binance pengguna memiliki fee resmi tersebut.
+- Hitung fee entry dan exit atas notional yang relevan. Catat fee terpisah dan kurangi dari PnL.
 
-Volatilitas adalah konteks pasar untuk mengelompokkan trade, bukan sinyal arah.
+### Slippage
+- Prioritaskan historical bid/ask atau data fill yang tersedia.
+- Jika tidak tersedia, asumsi 0.05% per sisi.
+- Tandai nilai estimasi dan jangan campur dengan data aktual tanpa label.
 
-Default definisi yang dipakai untuk eksperimen ini:
-- Timeframe pengukuran: 5M.
-- Lookback: 288 candle 5M yang telah selesai (24 jam).
-- Formula:
+### Funding
+- Gunakan historical Binance funding rate yang sesuai dengan waktu posisi terbuka.
+- Terapkan tanda cashflow yang benar untuk LONG/SHORT dan waktu funding aktual.
+- Jika funding data tidak tersedia, tandai hasil funding incomplete; jangan mengarang.
+- Catat funding setiap trade.
 
+### Liquidation
+- Gunakan leverage brackets, maintenance margin, dan aturan liquidation Binance yang berlaku untuk simbol dan ukuran posisi pada waktu simulasi.
+- Pertimbangkan Cross Margin dan equity akun, bukan hanya isolated-position formula.
+- Jika liquidation terjadi sebelum TP/SL, exit reason = `LIQUIDATION`, bukan SL.
+- Terapkan liquidation fee bila relevan dan datanya tersedia.
+- Jika aturan historis atau data bracket tidak dapat dipastikan, tandai liquidation modeling incomplete dan jangan menyatakan hasil net final sepenuhnya tervalidasi.
+
+## 8. Cooldown dan loss streak
+
+- Setelah 3 loss berturut-turut, hentikan entry baru selama 24 jam sejak posisi ketiga yang loss selesai.
+- Win mereset loss streak menjadi nol.
+- Cooldown berlaku untuk setiap simulasi TP/SL dan mode volatilitas secara independen.
+- Posisi yang sudah terbuka tetap dikelola sampai exit; cooldown tidak menutup posisi aktif.
+- Setelah 24 jam berakhir, entry baru boleh dilakukan segera jika ada sinyal fresh yang valid setelah cooldown. Sinyal yang muncul selama cooldown tidak boleh dipakai.
+- Cooldown tidak dengan sendirinya memaksa reset PSAR tambahan. Namun aturan reset PSAR setelah posisi ditutup tetap berlaku.
+- Catat loss streak, cooldown start/end, sinyal yang dilewati, dan total jam cooldown.
+
+## 9. Resolusi exit 1M
+
+Gunakan candle 1M secara kronologis untuk memeriksa TP/SL setelah entry.
+- Jika hanya TP tersentuh, exit TP.
+- Jika hanya SL tersentuh, exit SL.
+- Jika TP dan SL sama-sama tersentuh dalam candle 1M yang sama, asumsikan SL terjadi lebih dahulu dan beri label `AMBIGUOUS_1M_SL_FIRST`. Ini asumsi konservatif, bukan fakta urutan tick.
+- Jika terjadi gap melewati level, jangan mengasumsikan fill pada level yang tidak dapat dieksekusi; gunakan harga open yang relevan dan catat slippage/gap.
+- Jika candle 1M hilang ketika posisi terbuka dan urutan exit tidak dapat dipastikan, tandai `DATA_GAP`; jangan menebak.
+- Posisi yang masih terbuka pada akhir periode diberi label `OPEN_AT_END`, bukan TP/SL.
+- Catat timestamp candle 1M yang menentukan exit, entry/exit price, TP/SL levels, exit reason, bars held, dan quality flags.
+
+## 10. Volatilitas aktual
+
+Volatilitas adalah nilai numerik yang dihitung pada saat sinyal, bukan label kategori tetap.
+
+Formula:
 `volatility_24h_pct = (highest_high_288 - lowest_low_288) / first_open_288 × 100`
 
-- Untuk keputusan pada waktu sinyal, hanya gunakan 288 candle 5M yang selesai sebelum candle sinyal. Jangan memasukkan candle masa depan atau candle sinyal yang belum close.
-- Catat nilai persentase aktual pada setiap sinyal dan trade.
-- Jika 288 candle belum tersedia, label `VOLATILITY_UNAVAILABLE` dan jangan masukkan ke bucket.
+- Timeframe: 5M.
+- Lookback: 288 completed candles (24 jam).
+- Gunakan 288 candle 5M yang sudah selesai sebelum waktu sinyal. Tidak boleh ada future leakage.
+- Catat angka persentase aktual pada setiap sinyal.
+- Jika data belum cukup, tandai `VOLATILITY_UNAVAILABLE`.
 
-### Bucket volatilitas yang diminta
+Untuk breakdown gunakan interval 5 percentage points: `[0,5)`, `[5,10)`, `[10,15)`, `[15,20)`, dan seterusnya sampai mencakup volatilitas tertinggi yang ditemukan. Batas bawah termasuk, batas atas tidak termasuk. Contoh nilai 5.00% masuk ke 5–10%, bukan 0–5%. Jangan ubah angka menjadi V1/V2/V3/V4.
 
-Gunakan batas berikut persis:
+### Mode volatilitas
+Untuk setiap TP/SL dan setiap rentang volatilitas, jalankan tiga simulasi independen:
 
-| Bucket | Rentang |
-|---|---:|
-| V1 | 0% sampai <10% |
-| V2 | 15% sampai <25% |
-| V3 | 30% sampai <45% |
-| V4 | >50% |
+1. `ALL TRADING`: tidak menggunakan filter volatilitas; semua sinyal valid boleh masuk. Hasil baseline ini ditampilkan sebagai pembanding pada setiap rentang.
+2. `HANYA TRADING (ONLY)`: hanya entry jika volatilitas saat sinyal masuk ke rentang yang sedang diuji.
+3. `TIDAK TRADING (EXCLUDE)`: lewati entry jika volatilitas saat sinyal masuk ke rentang yang sedang diuji; rentang lain tetap boleh trading.
 
-Rentang yang tidak disebut pengguna **tidak boleh dipaksakan masuk ke bucket lain**:
-- 10% sampai <15%.
-- 25% sampai <30%.
-- 45% sampai 50% (termasuk 50%).
-- Nilai di luar/kurang data.
+Setiap simulasi dimulai dari saldo awal yang sama dan menjalankan ulang urutan trade, compounding, one-position rule, cooldown, fee, slippage, funding, dan liquidation. Jangan menghitung ONLY/EXCLUDE dengan mengurangi atau membagi PnL ALL.
 
-Labeli sebagai `UNCATEGORIZED_GAP` atau `VOLATILITY_UNAVAILABLE`. Laporkan jumlah sinyal dan trade pada kategori tersebut. Jangan menghapusnya dari laporan keseluruhan.
+Posisi yang sudah terbuka tetap dikelola meskipun volatilitas berpindah rentang setelah entry. Sinyal dengan volatility unavailable tetap boleh masuk ALL jika data strategi lengkap; untuk ONLY/EXCLUDE jangan masukkan ke rentang buatan, dan laporkan terpisah.
 
-Jika pengguna mengubah batas atau formula, buat versi eksperimen baru dan jangan mencampur hasil dengan versi ini.
+## 11. Periode backtest
 
-## 5. Eksperimen volatilitas: trading vs tidak trading
+Baseline wajib:
+- 1 hari penuh yang sudah selesai.
+- 7 hari penuh yang sudah selesai.
+- 30 hari penuh yang sudah selesai.
 
-Untuk setiap TP/SL, jalankan seluruh eksperimen berikut secara independen. Setiap eksperimen harus menjalankan ulang simulasi kronologis, termasuk aturan satu posisi dan cooldown 3 loss/24 jam. Jangan menjumlahkan hasil per bucket untuk membuat hasil portofolio karena urutan posisi dan cooldown dapat berubah.
+Semua periode menggunakan UTC, mengecualikan candle belum selesai, dan mengambil warm-up sebelum awal periode.
+- Sertakan timestamp awal/akhir yang tepat.
+- Breakdown harian 7/30 hari menggunakan tanggal kalender UTC.
+- Hari tanpa trade tetap dicatat dengan nol trade.
+- Jika pengguna meminta satu tanggal/hari spesifik, tampilkan breakdown untuk hari tersebut saja.
+- Jangan menyebut hasil 1/7/30 hari telah diuji jika data belum lengkap.
 
-### A. ALL_MARKETS — baseline
+## 12. Metrik dan klasifikasi
 
-Trade pada semua kondisi volatilitas, termasuk bucket yang ditentukan, gap bucket, dan kategori data volatilitas yang tersedia. Pisahkan hasil trade dengan label volatilitasnya. Sinyal dengan data volatilitas yang tidak tersedia tetap boleh masuk baseline jika data lain lengkap; tandai labelnya.
+Hitung untuk setiap konfigurasi, periode, rentang volatilitas, dan mode:
+- Net PnL USDT setelah biaya yang berhasil dimodelkan.
+- Jumlah trade.
+- Win rate.
+- TP count, SL count, liquidation count.
+- Ambiguous 1M, data-gap, dan open-at-end counts.
+- Final balance dan max drawdown untuk ringkasan periode.
+- Profit factor, expectancy, average/median trade, max loss streak, cooldown count/duration sebagai audit tambahan.
+- LONG dan SHORT breakdown tersedia di trade log dan dapat ditampilkan jika diminta.
 
-### B. ONLY_THIS_BUCKET — hanya trading pada bucket
+Win rate = TP count / (TP count + SL count) × 100. Liquidation, ambiguous, data-gap, dan open-at-end tidak boleh diam-diam dihitung sebagai win atau loss; tampilkan jumlahnya terpisah.
 
-Jalankan empat simulasi terpisah:
-- Hanya entry ketika volatilitas V1 (0–10%).
-- Hanya entry ketika volatilitas V2 (15–25%).
-- Hanya entry ketika volatilitas V3 (30–45%).
-- Hanya entry ketika volatilitas V4 (>50%).
-
-Sinyal di luar bucket terpilih dilewati. Posisi yang sudah terbuka tetap dikelola meskipun volatilitas berubah bucket setelah entry.
-
-### C. EXCLUDE_THIS_BUCKET — tidak trading pada bucket
-
-Jalankan empat simulasi terpisah:
-- Tidak entry pada V1; bucket lain tetap boleh.
-- Tidak entry pada V2; bucket lain tetap boleh.
-- Tidak entry pada V3; bucket lain tetap boleh.
-- Tidak entry pada V4; bucket lain tetap boleh.
-
-Sinyal di kategori gap dan data volatilitas tidak tersedia tetap mengikuti kebijakan baseline dan harus dilaporkan terpisah. Jangan diam-diam menganggap kategori gap sebagai salah satu bucket.
-
-**Makna perbandingan:** ONLY_THIS_BUCKET menjawab "bagaimana jika hanya trading di kondisi ini"; EXCLUDE_THIS_BUCKET menjawab "bagaimana jika menghindari kondisi ini dan tetap trading di kondisi lain". Keduanya wajib dibandingkan dengan ALL_MARKETS.
-
-## 6. Rentang waktu backtest
-
-Ambil data yang cukup untuk warm-up indikator dan lookback volatilitas sebelum awal periode evaluasi.
-
-Jalankan laporan untuk:
-- 1 hari terakhir yang lengkap.
-- 7 hari terakhir yang lengkap.
-- 30 hari terakhir yang lengkap.
-
-Definisi:
-- Semua tanggal dan batas waktu evaluasi menggunakan UTC.
-- Gunakan jendela waktu yang benar-benar sudah selesai; jangan memasukkan candle yang masih berjalan.
-- Untuk periode 7 dan 30 hari, sertakan breakdown **setiap hari kalender UTC**.
-- Laporan 30 hari wajib memiliki 30 baris harian per konfigurasi, termasuk hari dengan nol trade.
-- Laporan 7 hari wajib memiliki 7 baris harian.
-- Laporan 1 hari wajib memiliki 1 baris harian.
-- Tampilkan juga ringkasan kumulatif masing-masing jendela 1, 7, dan 30 hari.
-- Hari kalender tanpa trade tetap ditulis dengan trade = 0, bukan dihilangkan.
-- Untuk menghindari hasil parsial, sebutkan timestamp awal/akhir dan status kelengkapan data.
-
-Jika pengguna meminta tanggal tertentu, tanggal tersebut menggantikan jendela relatif. Jangan mengasumsikan timezone selain UTC untuk perhitungan.
-
-## 7. Metrik wajib
-
-Untuk setiap kombinasi periode × TP/SL × mode volatilitas, hitung dan laporkan:
-
-- Jumlah sinyal valid.
-- Sinyal dilewati karena filter tren.
-- Sinyal dilewati karena volatilitas.
-- Sinyal dilewati karena cooldown.
-- Total trade yang benar-benar dibuka.
-- TP count.
-- SL count.
-- Ambiguous 1M count.
-- Data-gap count.
-- Open-at-end count.
-- Win rate = TP / (TP + SL) × 100. Jelaskan bahwa ambiguous/data-gap/open tidak masuk denominator.
-- Gross PnL dalam persen-R atau USDT sesuai notional yang dinyatakan.
-- Total gross profit.
-- Total gross loss.
-- Net PnL setelah biaya jika biaya benar-benar dimodelkan.
-- Profit factor = gross profit positif / nilai absolut gross loss.
-- Expectancy per trade.
-- Rata-rata dan median hasil trade.
-- Maximum drawdown dari equity curve kronologis.
-- Loss streak maksimum.
-- Jumlah cooldown dan total jam terkunci.
-- Exposure time / waktu berada dalam posisi.
-- Fee, slippage, dan funding yang dimodelkan atau dinyatakan tidak tersedia/tidak dihitung.
-
-Jangan menyebut gross PnL sebagai net profit. Jika fee, slippage, atau funding belum tersedia, tampilkan hasil gross dan tulis dengan jelas bahwa hasil belum dikurangi komponen tersebut.
-
-### Perhitungan PnL
-
-Untuk notional tetap:
+PnL:
 - LONG gross return = (exit - entry) / entry.
 - SHORT gross return = (entry - exit) / entry.
-- Gross PnL USDT = gross return × notional.
+- Gross PnL = gross return × notional.
+- Net PnL = gross PnL - fees - slippage costs + funding cashflow, dengan liquidation adjustment bila berlaku.
 
-Jika menggunakan leverage, jangan mengalikan return harga dan menyebutnya ROI akun tanpa menghitung margin dan likuidasi. Leverage tidak mengubah persentase pergerakan harga TP/SL.
+Jangan menyebut gross sebagai net. Jika salah satu komponen biaya tidak tersedia, beri status incomplete dan jelaskan dampaknya.
 
-Jika fee/slippage/funding tidak dihitung, beri label `GROSS — COSTS EXCLUDED`.
+## 13. Format respons
 
-## 8. Format laporan wajib
+Ikuti `respon-ai.md`. Respons standar hanya memiliki dua tabel utama:
 
-### 8.1 Metadata pengujian
+1. Ringkasan periode 1, 7, dan 30 hari, dengan PnL, trade count, dan win rate untuk setiap fixed TP/SL.
+2. Breakdown harian berdasarkan interval volatilitas aktual 5%, dan mode ALL TRADING / HANYA TRADING / TIDAK TRADING untuk setiap TP/SL.
 
-Laporkan:
-- Symbol/contract.
-- Exchange dan sumber data.
-- Timestamp UTC awal/akhir.
-- Jumlah candle 1H, 5M, dan 1M.
-- Data gap, duplikasi, dan candle yang tidak lengkap.
-- PSAR parameter, implementasi, warm-up, dan status verifikasi.
-- Formula/lookback volatilitas.
-- Asumsi entry, exit, fill, fee, slippage, funding, dan notional.
-- Versi kode/backtest engine dan waktu eksekusi.
+Kolom ATR dinamis hanya ditambahkan setelah eksperimen dinamis diminta dan dijalankan. Jangan membuat tabel tambahan tanpa diminta. Detail trade log dan skip log disimpan untuk audit dan dapat ditampilkan bila pengguna meminta.
 
-### 8.2 Ringkasan per TP/SL
+## 14. Data quality dan anti-bias checklist
 
-Tampilkan ALL_MARKETS untuk keempat TP/SL pada masing-masing periode 1, 7, dan 30 hari.
+Sebelum status selesai:
+1. Pastikan 1M, 5M, dan 1H berasal dari simbol/kontrak yang sama.
+2. Pastikan timestamp terurut, tidak duplikat, dan gap ditandai.
+3. Pastikan filter tren hanya memakai 1H completed candle.
+4. Pastikan sinyal hanya diketahui setelah 5M close.
+5. Pastikan volatilitas hanya memakai 288 completed 5M candle sebelum sinyal.
+6. Pastikan entry fill/slippage tidak menggunakan harga yang tidak dapat dieksekusi.
+7. Pastikan exit diuji pada 1M dan ambiguous SL-first diberi label.
+8. Pastikan re-entry reset, one-position rule, opposite signal handling, dan cooldown benar.
+9. Pastikan fees, funding, exchange filters, dan liquidation tidak diabaikan tanpa catatan.
+10. Audit sampel trade secara manual dan jalankan ulang konfigurasi untuk memastikan hasil reproduktif.
+11. Simpan trade log dan skipped-signal log.
+12. Jangan menghapus hasil buruk atau baris hari tanpa trade.
 
-### 8.3 Perbandingan volatilitas
+Status:
+- `NOT_RUN`
+- `INCOMPLETE_DATA`
+- `RUN_COMPLETE_GROSS`
+- `RUN_COMPLETE_NET`
+- `INCONCLUSIVE`
 
-Untuk setiap TP/SL, tampilkan ALL_MARKETS, empat ONLY_THIS_BUCKET, dan empat EXCLUDE_THIS_BUCKET. Jangan hanya menampilkan strategi terbaik. Semua eksperimen yang dijalankan harus terlihat.
-
-### 8.4 Breakdown harian sampai 30 hari
-
-Buat tabel per hari UTC untuk setiap TP/SL dan setiap mode volatilitas. Minimal kolom:
-
-| Date UTC | Signals | Trades | TP | SL | Ambiguous | Win rate | Gross PnL | Net PnL | Loss streak max | Cooldown hours |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-
-- Tampilkan baris nol trade.
-- Jangan menggabungkan hasil LONG dan SHORT tanpa tetap menyediakan breakdown arah.
-- Sertakan ringkasan LONG dan SHORT secara terpisah.
-- PnL harian harus mengikuti trade yang selesai pada hari itu. Trade yang melintasi tengah malam tetap dicatat pada tanggal exit; sediakan juga tanggal entry untuk audit.
-
-### 8.5 Trade log lengkap
-
-Simpan seluruh trade dalam CSV/JSON, satu baris per trade, minimal berisi:
-- trade_id, symbol, direction.
-- signal_time_5m, signal_open/high/low/close, signal_psar.
-- trend_time_1h, trend_close_1h, trend_psar_1h, trend_direction.
-- volatility_pct, volatility_bucket.
-- entry_time_1m, entry_price, notional.
-- tp_pct, sl_pct, tp_price, sl_price.
-- exit_time_1m, exit_price, exit_reason.
-- ambiguous_1m, data_gap, bars_held_1m.
-- gross_return_pct, gross_pnl, fee, slippage, funding, net_pnl.
-- loss_streak_before, loss_streak_after, cooldown_start, cooldown_end.
-- data_quality_flags, backtest_version.
-
-Simpan juga daftar sinyal yang dilewati dan alasan skip, supaya hasil bisa diaudit. Ringkasan tabel bukan pengganti trade log.
-
-## 9. Validasi data dan pemeriksaan anti-bias
-
-Sebelum menyatakan backtest selesai:
-
-1. Pastikan candle 1M, 5M, dan 1H berasal dari kontrak dan exchange yang sama.
-2. Pastikan timestamp candle konsisten dan candle 1M yang diperlukan untuk exit tersedia.
-3. Pastikan tidak ada candle masa depan yang masuk ke filter 1H atau volatilitas.
-4. Pastikan candle 1H yang dipakai sudah close sebelum waktu sinyal 5M.
-5. Pastikan sinyal 5M hanya diketahui setelah close.
-6. Pastikan entry tidak diisi pada harga yang sudah berlalu.
-7. Pastikan TP/SL diputuskan memakai 1M, bukan high/low 5M.
-8. Audit candle 1M yang menyentuh TP dan SL sekaligus.
-9. Audit loss streak dan timestamp cooldown 24 jam.
-10. Jalankan ulang satu sampel trade secara manual untuk memastikan hasil simulator cocok dengan data mentah.
-11. Jalankan ulang eksperimen dengan konfigurasi yang sama dan pastikan hasil identik.
-12. Jangan menghapus data gap atau hasil buruk tanpa mengungkapkannya.
-
-## 10. Kejujuran hasil dan status kesimpulan
-
-Aturan mutlak:
-- Jangan membuat angka, trade, win rate, PnL, atau statistik yang tidak dihasilkan dari data.
-- Jangan menyebut backtest sudah dijalankan jika baru menulis rencana atau kode.
-- Jika data 1M belum tersedia, hasil exit belum tervalidasi; jangan memakai hasil 5M sebagai pengganti tanpa label.
-- Jika data yang tersedia hanya 1, 7, atau 30 hari, jangan mengklaim periode lain sudah diuji.
-- Jangan menyembunyikan konfigurasi yang rugi atau bucket dengan hasil buruk.
-- Jangan memilih strategi terbaik hanya dari PnL; tampilkan jumlah trade, drawdown, profit factor, expectancy, biaya, dan keterbatasan sampel.
-- Jangan menganggap periode 30 hari sebagai bukti statistik yang kuat.
-- Jika PSAR custom belum dicocokkan dengan referensi, nyatakan secara eksplisit.
-- Jika OHLC 1M menyentuh TP dan SL dalam menit yang sama, nyatakan urutan sebenarnya tidak diketahui. Asumsi SL-first adalah konservatif, bukan fakta tick.
-- Jangan mengoptimasi parameter dengan data yang sama lalu menyebut hasilnya out-of-sample.
-
-Gunakan status akhir:
-- `NOT_RUN`: data/simulasi belum dijalankan.
-- `INCOMPLETE_DATA`: data tidak cukup atau ada gap penting.
-- `RUN_COMPLETE_GROSS`: simulasi lengkap, tetapi biaya belum dihitung.
-- `RUN_COMPLETE_NET`: simulasi lengkap dan biaya yang relevan sudah dimodelkan.
-- `INCONCLUSIVE`: hasil belum cukup untuk mengambil kesimpulan.
-
-Keputusan strategi:
+Kesimpulan strategi:
 - `PROMISING_FOR_FURTHER_TEST`
 - `WEAK`
 - `REJECTED`
 - `INCONCLUSIVE`
 
-Jangan gunakan label `PROFITABLE` atau `ROBUST` hanya karena PnL 1–30 hari positif. Validasi lanjutan pada periode historis lebih panjang dan data out-of-sample diperlukan.
+Jangan menyebut strategi `PROFITABLE` atau `ROBUST` hanya dari hasil 1, 7, atau 30 hari. Hasil tersebut hanya indikasi awal dan membutuhkan periode lebih panjang serta out-of-sample validation.
 
-## 11. Alur kerja AI
+## 15. Riwayat hasil
 
-Saat pengguna meminta backtest:
-
-1. Baca dokumen ini dan `respon-ai.md`.
-2. Pastikan symbol dan kontrak. Jika belum disebut, tanyakan symbol.
-3. Ambil data 1H, 5M, dan 1M termasuk warm-up sebelum periode evaluasi.
-4. Validasi kualitas dan cakupan data sebelum simulasi.
-5. Bekukan konfigurasi strategi, PSAR, volatilitas, TP/SL, dan cooldown.
-6. Jalankan semua konfigurasi TP/SL dan mode volatilitas yang ditetapkan.
-7. Buat ringkasan 1, 7, dan 30 hari serta breakdown harian lengkap.
-8. Simpan trade log dan skip log mentah agar dapat direproduksi.
-9. Audit sampel trade, ambiguitas 1M, dan cooldown.
-10. Laporkan hasil apa adanya, termasuk konfigurasi rugi dan keterbatasan.
-11. Jangan mengubah strategi atau parameter tanpa persetujuan pengguna. Jika ada eksperimen baru, simpan sebagai versi terpisah.
-
-## 12. Bahasa laporan
-
-- Gunakan Bahasa Indonesia.
-- Jawab langsung dan gunakan tabel untuk perbandingan.
-- Bedakan fakta data, asumsi simulasi, dan interpretasi.
-- Sertakan angka pembilang/penyebut, bukan win rate saja.
-- Cantumkan tanggal, timezone, satuan, dan formula.
-- Jangan memberikan rekomendasi entry live hanya karena backtest terlihat positif.
+Setelah backtest benar-benar dijalankan, simpan atau perbarui `history-backtest/{SYMBOL}.md` sesuai `history-backtest/README.md`. Simpan konfigurasi, timestamp UTC, dua tabel respons, data quality, dan referensi trade/skip logs. Jangan membuat riwayat hasil fiktif.
