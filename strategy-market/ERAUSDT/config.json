@@ -1,0 +1,149 @@
+{
+  "config_version": 1,
+  "market": {
+    "symbol": "ERAUSDT",
+    "market_type": "USD_M_FUTURES",
+    "quote_asset": "USDT"
+  },
+  "strategy": {
+    "name": "PSAR Follow Trend",
+    "enabled": true,
+    "indicators": {
+      "psar": {
+        "step": 0.01,
+        "maximum": 0.1
+      }
+    },
+    "timeframes": {
+      "trend": "1h",
+      "entry": "5m",
+      "execution_check": "1m"
+    },
+    "trend_filter": {
+      "enabled": true,
+      "long_condition": "last_closed_1h_close > last_closed_1h_psar",
+      "short_condition": "last_closed_1h_close < last_closed_1h_psar",
+      "use_closed_candles_only": true
+    },
+    "entry": {
+      "type": "fresh_psar_cross",
+      "use_closed_candles_only": true,
+      "long_condition": {
+        "previous_5m_close_lte_psar": true,
+        "latest_5m_close_gt_psar": true,
+        "trend_must_be": "LONG"
+      },
+      "short_condition": {
+        "previous_5m_close_gte_psar": true,
+        "latest_5m_close_lt_psar": true,
+        "trend_must_be": "SHORT"
+      },
+      "price_reference": "signal_candle_close",
+      "max_open_positions": 1,
+      "same_direction_reentry_requires_psar_reset": true,
+      "evaluate_opposite_fresh_signal_after_exit": true
+    }
+  },
+  "risk": {
+    "position": {
+      "sizing_mode": "fixed_notional",
+      "notional_usdt": 100,
+      "compounding": false,
+      "leverage": null
+    },
+    "take_profit": {
+      "enabled": true,
+      "price_move_pct": 7
+    },
+    "stop_loss": {
+      "enabled": true,
+      "price_move_pct": 5
+    },
+    "consecutive_loss_pause": {
+      "enabled": true,
+      "losses_to_trigger": 3,
+      "pause_duration_hours": 24,
+      "count_closed_trades_only": true,
+      "reset_streak_after_win": true,
+      "ignore_signals_during_pause": true,
+      "require_new_signal_after_pause": true
+    }
+  },
+  "volatility_filter": {
+    "enabled": true,
+    "minimum_pct": 5,
+    "maximum_pct": 30,
+    "inclusive": true,
+    "calculation": {
+      "formula": "((daily_high - daily_low) / daily_open) * 100",
+      "timeframe": "1d",
+      "timezone": "UTC",
+      "source_candle": "completed_daily_candle"
+    },
+    "application": "allow_entries_only_on_eligible_utc_days",
+    "lookahead_bias": true,
+    "backtest_only": true,
+    "live_trading_safe": false,
+    "live_replacement": null
+  },
+  "execution": {
+    "entry_order_type": "MARKET",
+    "entry_fill_assumption": "5m_signal_candle_close",
+    "exit_order_type": "MARKET",
+    "tp_sl_trigger_source": "1m_ohlc",
+    "when_tp_and_sl_touch_same_1m_candle": "SL_FIRST",
+    "ambiguous_trade_label": "AMBIGUOUS_1M_SL_FIRST",
+    "ignore_5m_and_1h_reversal_while_position_open": true
+  },
+  "costs": {
+    "fee_rate_per_side": 0.0005,
+    "fee_rate_source": "backtest_assumption",
+    "slippage_bps_per_side": null,
+    "funding_enabled": true,
+    "funding_source": "historical_exchange_funding_rate"
+  },
+  "backtest": {
+    "timezone": "UTC",
+    "position_notional_usdt": 100,
+    "periods": [
+      "1d",
+      "7d",
+      "30d"
+    ],
+    "carry_positions_across_period_boundaries": true,
+    "include_open_position_at_end": true,
+    "report_days_without_trades": true,
+    "required_metrics": [
+      "total_trades",
+      "long_trades",
+      "short_trades",
+      "wins",
+      "losses",
+      "win_rate_pct",
+      "tp_hits",
+      "sl_hits",
+      "gross_profit_usdt",
+      "gross_loss_usdt",
+      "fees_usdt",
+      "slippage_usdt",
+      "funding_usdt",
+      "net_pnl_usdt",
+      "return_pct",
+      "max_drawdown_pct",
+      "longest_loss_streak",
+      "pause_count",
+      "profit_factor",
+      "average_win_usdt",
+      "average_loss_usdt",
+      "open_position_at_end",
+      "unrealized_pnl_usdt"
+    ],
+    "data_quality_status": "INCOMPLETE_DATA",
+    "notes": [
+      "Full-day volatility filtering uses the completed daily candle and has look-ahead bias for entries earlier in that same day.",
+      "Slippage is not configured and must not be reported as zero; report it as unavailable until a model is supplied.",
+      "TP/SL ordering must be checked with 1m candles. If both levels are touched in one 1m candle, use the conservative SL-first assumption.",
+      "Do not label results as fully validated while required execution or cost data is incomplete."
+    ]
+  }
+}
