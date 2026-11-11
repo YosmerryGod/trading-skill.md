@@ -133,21 +133,55 @@ Warna harus mencerminkan nilai sebenarnya. Jangan memberi warna hijau pada konfi
 
 ### 11.2 Ringkasan utama
 
-Tampilkan tabel perbandingan empat konfigurasi TP/SL. Gunakan data hasil backtest aktual; jangan mengisi angka contoh atau perkiraan seolah-olah hasil nyata.
+Ringkasan utama harus memberi gambaran performa yang lebih lengkap, tetapi tetap mudah dibaca. Pecah menjadi tiga tabel agar tidak terlalu lebar. Tampilkan empat konfigurasi TP/SL secara berdampingan dan gunakan data backtest aktual. Jangan mengisi angka contoh atau perkiraan seolah-olah hasil nyata.
 
-| TP / SL | Total Trade | Win | Loss | Win Rate | Net PnL |
-|---|---:|---:|---:|---:|---:|
-| 3% / 2% | — | — | — | — | — |
-| 5% / 3% | — | — | — | — | — |
-| 7% / 5% | — | — | — | — | — |
-| 10% / 7% | — | — | — | — | — |
+**A. Aktivitas dan hasil trade**
+
+| TP / SL | Total Trade | LONG | SHORT | Win | Loss | TP Hit | SL Hit | Win Rate |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 3% / 2% | — | — | — | — | — | — | — | — |
+| 5% / 3% | — | — | — | — | — | — | — | — |
+| 7% / 5% | — | — | — | — | — | — | — | — |
+| 10% / 7% | — | — | — | — | — | — | — | — |
+
+**B. Profit dan biaya**
+
+| TP / SL | Gross Profit | Gross Loss | Fee | Slippage | Funding | Net PnL | Return |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 3% / 2% | — | — | — | — | — | — | — |
+| 5% / 3% | — | — | — | — | — | — | — |
+| 7% / 5% | — | — | — | — | — | — | — |
+| 10% / 7% | — | — | — | — | — | — | — |
+
+**C. Risiko dan kualitas performa**
+
+| TP / SL | Max Drawdown | Loss Streak Terpanjang | Jeda 24 Jam | Profit Factor | Avg. Win | Avg. Loss | Posisi Terbuka di Akhir |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 3% / 2% | — | — | — | — | — | — | — |
+| 5% / 3% | — | — | — | — | — | — | — |
+| 7% / 5% | — | — | — | — | — | — | — |
+| 10% / 7% | — | — | — | — | — | — | — |
+
+Definisi dan aturan:
+- **LONG / SHORT** adalah jumlah trade berdasarkan arah posisi.
+- **TP Hit / SL Hit** adalah jumlah posisi yang ditutup oleh masing-masing target. Jika ada penutupan lain, tampilkan sebagai kategori tersendiri; jangan paksa masuk TP atau SL.
+- **Gross Profit** adalah total hasil positif trade sebelum biaya; **Gross Loss** adalah total hasil negatif trade sebelum biaya.
+- **Net PnL** harus memperhitungkan fee, slippage, dan funding yang tersedia. Tampilkan komponen biaya secara terpisah.
+- **Return** adalah Net PnL dibagi modal awal, dalam persen.
+- **Max Drawdown** harus menjelaskan apakah dihitung dari realized equity saja atau termasuk unrealized/floating PnL.
+- **Profit Factor** adalah Gross Profit dibagi nilai absolut Gross Loss. Jika Gross Loss nol, tampilkan N/A, bukan angka tak terhingga.
+- **Avg. Win / Avg. Loss** adalah rata-rata PnL per trade menang dan per trade kalah sebelum atau sesudah biaya harus disebutkan secara eksplisit. Utamakan nilai net setelah biaya.
+- **Jeda 24 Jam** menampilkan berapa kali aturan jeda setelah 3 loss beruntun terpicu.
+- **Posisi Terbuka di Akhir** wajib disebutkan karena posisi yang belum ditutup belum menjadi hasil final; tampilkan floating PnL secara terpisah bila tersedia.
+- Jika suatu metrik tidak bisa dihitung, tampilkan N/A dan jelaskan alasannya. Jangan mengarang atau menyimpulkan nilai yang tidak tersedia.
 
 Aturan pewarnaan:
-- Net PnL positif: 🟢.
-- Net PnL negatif: 🔴.
-- Net PnL nol: ⚪.
-- Kolom Win dapat diberi penanda 🟢 dan Loss 🔴.
-- Win Rate ditampilkan sebagai persentase dengan jumlah trade sebagai konteks; jangan menilai win rate tanpa melihat net PnL dan jumlah trade.
+- Net PnL dan Return positif: 🟢; negatif: 🔴; nol: ⚪.
+- Win dan TP Hit: 🟢; Loss dan SL Hit: 🔴.
+- Drawdown, loss streak, dan jeda yang terpicu: 🟡 atau 🔴 sesuai tingkat risikonya.
+- Profit Factor di atas 1: 🟢; di bawah 1: 🔴; sama dengan 1: ⚪.
+- Jangan memberi warna hijau pada konfigurasi hanya karena nilainya paling baik jika hasilnya masih negatif.
+- Win Rate harus dibaca bersama jumlah trade, Net PnL, Profit Factor, dan Max Drawdown.
 
 ### 11.3 Detail modal dan risiko
 
