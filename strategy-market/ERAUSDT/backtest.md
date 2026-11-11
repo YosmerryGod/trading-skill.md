@@ -132,3 +132,128 @@ Hasil pada bagian 3 bukan hasil final tervalidasi karena:
 - Jangan menimpa hasil periode lama tanpa menyimpan histori perubahan.
 - Jika parameter di `config.json` berubah, catat versi atau snapshot konfigurasi yang digunakan untuk setiap hasil.
 - Jangan menyebut hasil sebagai DATA LENGKAP sebelum seluruh komponen penting divalidasi.
+
+
+---
+
+# Riwayat Backtest September–November 2026
+
+Bagian ini menyimpan eksperimen yang sebelumnya sudah dijalankan untuk ERAUSDT. Hasil di bawah adalah **hasil historis/provisional dari simulasi terdahulu**, bukan hasil final tervalidasi. Jangan menghapus atau menimpa hasil Agustus di atas.
+
+## 9. Parameter dan Cakupan Eksperimen
+
+- Market: ERAUSDT USDT-M Futures.
+- Notional tetap: 100 USDT per posisi, tanpa compounding.
+- Filter volatilitas: 5–30% berdasarkan rentang high-low harian terhadap open harian.
+- Strategi dasar: PSAR Follow Trend, trend 1H dan entry 5M.
+- Periode yang dicoba:
+  - September 2026: 1–30 September.
+  - Oktober 2026: 1–31 Oktober.
+  - November 2026: 1–10 November; 11 November tidak dimasukkan karena hari belum selesai.
+- Konfigurasi TP/SL yang dibandingkan: 3%/2%, 5%/3%, 7%/5%, dan 10%/7%.
+- Setiap periode bulanan dimulai dari kondisi flat secara independen. Hasil akumulasi di bawah adalah penjumlahan PnL periode independen, bukan simulasi satu akun berkelanjutan.
+
+## 10. Perbandingan September 2026
+
+Hari yang lolos filter volatilitas: **16 hari**.
+
+| TP / SL | Trade tertutup | Win | Loss | Win rate | Gross PnL | Fee | Funding | Net PnL |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 3% / 2% | 32 | 16 | 16 | 50.0% | +16.00 | -3.20 | -0.05 | **+12.75** |
+| 5% / 3% | 15 | 8 | 7 | 53.3% | +19.00 | -1.50 | -0.23 | **+17.27** |
+| 7% / 5% | 9 | 6 | 3 | 66.7% | +27.00 | -0.90 | -0.08 | **+26.02** |
+| 10% / 7% | 5 | 3 | 2 | 60.0% | +16.00 | -0.50 | +0.31 | **+15.81** |
+
+Posisi yang masih terbuka pada akhir periode dan tidak masuk net PnL:
+- TP/SL 3%/2%: LONG, entry 0.06664.
+- TP/SL 5%/3%: SHORT, entry 0.06859.
+- TP/SL 7%/5%: SHORT, entry 0.06791.
+- TP/SL 10%/7%: SHORT, entry 0.07080.
+
+## 11. Perbandingan Oktober 2026
+
+Hari yang lolos filter volatilitas: **25 hari**.
+
+| TP / SL | Trade tertutup | Win | Loss | Win rate | Gross PnL | Fee | Funding | Net PnL |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 3% / 2% | 82 | 40 | 42 | 48.8% | +36.00 | -8.20 | -1.23 | **+26.57** |
+| 5% / 3% | 59 | 25 | 34 | 42.4% | +23.00 | -5.90 | -0.28 | **+16.82** |
+| 7% / 5% | 39 | 22 | 17 | 56.4% | +69.00 | -3.90 | -1.90 | **+63.20** |
+| 10% / 7% | 25 | 12 | 13 | 48.0% | +29.00 | -2.50 | -5.10 | **+21.40** |
+
+Posisi yang masih terbuka pada akhir periode dan tidak masuk net PnL:
+- TP/SL 3%/2%: SHORT, entry 0.06690.
+- TP/SL 5%/3%: LONG, entry 0.06849.
+- TP/SL 7%/5%: SHORT, entry 0.06986.
+- TP/SL 10%/7%: SHORT, entry 0.06986.
+
+## 12. Perbandingan November 1–10, 2026
+
+Hari yang lolos filter volatilitas: **10 hari**. Data 11 November merupakan candle harian parsial dan dikecualikan.
+
+| TP / SL | Trade tertutup | Win | Loss | Win rate | Gross PnL | Fee | Funding | Net PnL | Pause 24 jam |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 3% / 2% | 27 | 10 | 17 | 37.0% | -4.00 | -2.70 | +0.32 | **-6.38** | 4 |
+| 5% / 3% | 23 | 8 | 15 | 34.8% | -5.00 | -2.30 | +1.11 | **-6.19** | 2 |
+| 7% / 5% | 15 | 6 | 9 | 40.0% | -3.00 | -1.50 | +1.27 | **-3.23** | 1 |
+| 10% / 7% | 7 | 2 | 5 | 28.6% | -15.00 | -0.70 | -2.02 | **-17.72** | 1 |
+
+Tidak ada posisi terbuka pada cutoff 10 November.
+
+Hari eligible dan volatilitas November:
+| Tanggal UTC | Volatilitas |
+|---|---:|
+| 2026-11-01 | 11.92% |
+| 2026-11-02 | 7.95% |
+| 2026-11-03 | 10.17% |
+| 2026-11-04 | 11.28% |
+| 2026-11-05 | 12.81% |
+| 2026-11-06 | 11.56% |
+| 2026-11-07 | 9.26% |
+| 2026-11-08 | 13.20% |
+| 2026-11-09 | 10.01% |
+| 2026-11-10 | 18.84% |
+
+## 13. Akumulasi PnL September–November 10
+
+Penjumlahan net PnL dari tiga pengujian bulanan independen:
+
+| TP / SL | September | Oktober | November 1–10 | Total net PnL |
+|---|---:|---:|---:|---:|
+| 3% / 2% | +12.75 | +26.57 | -6.38 | **+32.94 USDT** |
+| 5% / 3% | +17.27 | +16.82 | -6.19 | **+27.90 USDT** |
+| 7% / 5% | +26.02 | +63.20 | -3.23 | **+85.99 USDT** |
+| 10% / 7% | +15.81 | +21.40 | -17.72 | **+19.49 USDT** |
+
+Catatan interpretasi:
+- Pada hasil historis ini, konfigurasi TP 7% / SL 5% memiliki akumulasi net PnL tertinggi, yaitu +85.99 USDT.
+- November 1–10 negatif untuk keempat konfigurasi.
+- Total di atas bukan return akun yang telah dikompaun dan tidak memasukkan floating PnL posisi akhir September/Oktober.
+- Tidak boleh dianggap sebagai bukti bahwa TP 7% / SL 5% akan menghasilkan profit di masa depan.
+
+## 14. Daftar Hari Eligible September dan Oktober
+
+Hasil arsip sebelumnya mencatat jumlah hari eligible, tetapi daftar volatilitas per hari untuk dua bulan ini belum disalin ke laporan. Jangan membuat atau mengisi angka yang belum tersedia. Data tersebut dapat ditambahkan setelah diambil ulang dari candle harian historis.
+
+| Periode | Hari eligible |
+|---|---:|
+| September 2026 | 16 |
+| Oktober 2026 | 25 |
+| November 1–10, 2026 | 10 |
+
+## 15. Audit Wajib Sebelum Menggunakan Hasil September–November
+
+**Status bagian ini: LEGACY_PROVISIONAL / INCOMPLETE_DATA.**
+
+Saat meninjau ulang implementasi simulasi terdahulu, ditemukan risiko bahwa setelah posisi ditutup oleh TP/SL, loop dapat mengevaluasi sinyal entry pada candle 5M yang sama. Perilaku ini berpotensi membuat entry ulang terlalu cepat dan menggelembungkan jumlah trade, terutama pada konfigurasi TP/SL yang sempit. Hasil Oktober dengan 82 trade pada TP 3%/SL 2% perlu diperiksa secara khusus.
+
+Sebelum angka-angka ini dipakai untuk memilih parameter final:
+1. Perbaiki dan audit aturan exit agar tidak membuka entry baru pada candle yang sama dengan candle exit.
+2. Terapkan reset PSAR setelah exit sesuai arah posisi dan wajibkan fresh cross baru.
+3. Validasi urutan TP/SL menggunakan candle 1M; gunakan SL-first bila kedua level tersentuh dalam candle 1M yang sama.
+4. Jalankan ulang September, Oktober, dan November menggunakan implementasi yang sama dan konfigurasi yang sama.
+5. Untuk hasil lintas bulan yang berkelanjutan, bawa posisi terbuka melintasi batas bulan. Jangan memulai setiap bulan dari flat jika ingin menyebutnya sebagai simulasi akun kontinu.
+6. Hitung ulang drawdown, profit factor, loss streak, pause, unrealized PnL, fee, funding, dan slippage.
+7. Uji ulang filter volatilitas tanpa look-ahead bias. Filter high-low harian penuh hanya boleh dipakai sebagai eksperimen historis, bukan sinyal yang tersedia pada awal hari.
+
+Jangan menggabungkan hasil lama dan hasil audit ulang dalam satu tabel tanpa label versi. Pertahankan hasil lama sebagai arsip dan beri label jelas jika hasil telah dihitung ulang.
