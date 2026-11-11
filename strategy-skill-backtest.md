@@ -45,8 +45,28 @@ Ketentuan:
 - Entry hanya pada cross baru (fresh cross).
 - Jangan membuka posisi hanya karena harga masih berada di sisi yang sama dari PSAR.
 - LONG dan SHORT menggunakan aturan yang simetris.
+- Sinyal PSAR yang valid belum otomatis menjadi entry; sinyal wajib lolos Filter Volatilitas pada bagian 4.
 
-## 4. Eksekusi Entry
+## 4. Filter Volatilitas (WAJIB)
+
+Entry hanya boleh dilakukan ketika volatilitas pasar memenuhi ambang berikut.
+
+- Indikator volatilitas: ATR(14) pada timeframe 5M.
+- Metode perhitungan untuk backtest ini: SMA 14 periode dari True Range (TR), agar konsisten dengan eksperimen yang sudah dijalankan.
+- True Range dihitung sebagai nilai terbesar dari:
+  - High candle saat ini dikurangi Low candle saat ini.
+  - Nilai absolut High candle saat ini dikurangi Close candle sebelumnya.
+  - Nilai absolut Low candle saat ini dikurangi Close candle sebelumnya.
+- Rumus persentase volatilitas: **ATR% = ATR(14) / Close candle sinyal 5M × 100**.
+- Gunakan hanya candle 5M yang sudah selesai/closed. Jangan menggunakan data candle yang sedang berjalan.
+- **Entry hanya diizinkan jika ATR% > 1.00%.** Nilai tepat 1.00% atau lebih rendah wajib dilewati.
+- Filter diperiksa pada candle sinyal entry 5M. Jika ATR% tidak memenuhi syarat, abaikan sinyal tersebut dan jangan membuka entry tertunda ketika volatilitas kemudian meningkat.
+- Filter ini berlaku untuk LONG dan SHORT secara simetris.
+- ATR hanya berfungsi sebagai filter kelayakan volatilitas, bukan penentu arah LONG atau SHORT. Arah tetap ditentukan oleh PSAR 1H dan fresh cross PSAR 5M.
+- Catat nilai ATR, ATR%, dan timestamp candle 5M yang digunakan pada setiap sinyal, termasuk sinyal yang ditolak oleh filter.
+- Filter volatilitas hanya mengatur pembukaan posisi baru. Posisi yang sudah terbuka tetap dikelola berdasarkan aturan TP/SL dan aturan posisi terbuka.
+
+## 5. Eksekusi Entry
 
 - Gunakan asumsi market order segera setelah candle sinyal 5M selesai.
 - Harga entry backtest menggunakan close candle sinyal 5M.
@@ -54,7 +74,7 @@ Ketentuan:
 - Maksimal satu posisi terbuka pada satu waktu.
 - Jika posisi lama ditutup dan pada candle 5M yang sama terdapat sinyal valid arah berlawanan, tutup posisi lama terlebih dahulu, lalu evaluasi sinyal baru satu kali setelah posisi sudah flat. Sinyal baru tetap harus memenuhi syarat fresh cross.
 
-## 5. Take Profit dan Stop Loss
+## 6. Take Profit dan Stop Loss
 
 Uji empat konfigurasi TP/SL berikut secara terpisah. Jangan menggabungkan hasil antar-konfigurasi.
 
@@ -74,13 +94,13 @@ Ketentuan perhitungan:
 - Posisi ditutup ketika TP atau SL tersentuh.
 - Jika TP dan SL sama-sama tersentuh dalam candle 1M yang sama dan urutan sentuh tidak dapat dipastikan, gunakan asumsi konservatif **SL lebih dahulu** dan beri label `AMBIGUOUS_1M_SL_FIRST`.
 
-## 6. Aturan Selama Posisi Terbuka
+## 7. Aturan Selama Posisi Terbuka
 
 - Jika tren 1H berubah arah, jangan tutup posisi karena perubahan tersebut. Tetap kelola posisi sampai TP atau SL.
 - Jika PSAR 5M berbalik arah saat posisi masih terbuka, abaikan sinyal tersebut. Tetap kelola posisi sampai TP atau SL.
 - Jangan membuka posisi tambahan selama masih ada posisi aktif.
 
-## 7. Reset Sinyal Setelah Posisi Ditutup
+## 8. Reset Sinyal Setelah Posisi Ditutup
 
 Setelah posisi ditutup karena TP maupun SL, jangan langsung masuk lagi ke arah yang sama.
 
@@ -88,7 +108,7 @@ Setelah posisi ditutup karena TP maupun SL, jangan langsung masuk lagi ke arah y
 - Setelah posisi SHORT ditutup, tunggu candle 5M close kembali di atas atau sama dengan PSAR. Setelah itu, tunggu fresh cross close ke bawah PSAR untuk sinyal SHORT berikutnya.
 - Aturan reset berlaku setelah TP maupun SL.
 
-## 8. Batas Kerugian Beruntun dan Jeda Trading
+## 9. Batas Kerugian Beruntun dan Jeda Trading
 
 - Hitung loss secara berurutan berdasarkan hasil posisi yang sudah ditutup.
 - Setelah **3 kali loss berturut-turut**, hentikan pembukaan posisi baru selama **24 jam**, dihitung sejak waktu penutupan posisi loss ketiga.
@@ -99,7 +119,7 @@ Setelah posisi ditutup karena TP maupun SL, jangan langsung masuk lagi ke arah y
 - Sinyal yang muncul selama masa jeda diabaikan; jangan digunakan sebagai entry tertunda setelah jeda selesai.
 - Terapkan aturan jeda yang sama pada semua konfigurasi TP/SL.
 
-## 9. Ketentuan Backtest
+## 10. Ketentuan Backtest
 
 - Jalankan setiap konfigurasi TP/SL secara independen dengan aturan strategi dan data historis yang sama.
 - Uji periode 1 hari, 7 hari, dan 30 hari.
@@ -111,11 +131,15 @@ Setelah posisi ditutup karena TP maupun SL, jangan langsung masuk lagi ke arah y
 - Jelaskan asumsi data dan eksekusi. Jangan menyebut hasil final tervalidasi jika komponen penting seperti funding, biaya, slippage, atau risiko likuidasi belum dapat dihitung dengan memadai.
 - Jika data yang diperlukan tidak tersedia, tandai hasil sebagai `INCOMPLETE_DATA` dan jelaskan bagian yang belum dihitung.
 
-## 10. Di Luar Cakupan Dokumen Ini
+## 11. Cakupan Filter Volatilitas
 
-Filter, klasifikasi, dan eksperimen volatilitas **belum menjadi bagian dari aturan strategi ini**. Jangan menerapkan filter volatilitas atau mengelompokkan hasil berdasarkan volatilitas secara otomatis. Tambahkan aturan tersebut hanya setelah ada keputusan terpisah.
+- Filter volatilitas ATR(14) 5M dengan ambang **ATR% > 1.00%** merupakan bagian tetap dari aturan strategi ini, bukan eksperimen opsional.
+- Semua backtest berikutnya wajib menerapkan filter tersebut, kecuali user secara eksplisit meminta simulasi pembanding tanpa filter.
+- Jangan mengubah ambang 1.00%, timeframe, periode ATR, atau metode smoothing secara diam-diam.
+- Jika metode ATR diubah dari SMA menjadi Wilder RMA atau metode lain, dokumentasikan sebagai perubahan parameter dan jalankan ulang backtest agar hasilnya dapat dibandingkan secara adil.
+- ATR% di atas 1.00% tidak menjamin arah atau keberhasilan trade; filter hanya menyingkirkan entry ketika volatilitas berada di bawah ambang yang ditetapkan.
 
-## 11. Format Respons Backtest
+## 12. Format Respons Backtest
 
 Setiap hasil backtest yang disampaikan kepada user harus menggunakan tabel yang ringkas, mudah dibandingkan, dan memakai penanda warna secara konsisten. Tampilkan ringkasan terlebih dahulu, lalu detail risiko dan kesimpulan.
 
