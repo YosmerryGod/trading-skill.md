@@ -263,7 +263,7 @@ Jangan menggabungkan hasil lama dan hasil audit ulang dalam satu tabel tanpa lab
 
 # 16. Audit Ulang TP 7% / SL 5% — September 1 sampai November 10, 2026
 
-<badge> AUDIT_RUN_V1 — PROVISIONAL </badge>
+**Status: AUDIT_RUN_V1 — PROVISIONAL**
 
 Audit ini menjalankan satu simulasi berkelanjutan dari 2026-09-01 00:00 UTC sampai 2026-11-11 00:00 UTC. Posisi tidak di-reset pada batas pergantian bulan. Konfigurasi yang dipakai: notional 100 USDT, TP 7%, SL 5%, filter volatilitas 5–30%, PSAR 0.01/0.10, trend 1H, entry 5M.
 
