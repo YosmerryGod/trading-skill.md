@@ -384,3 +384,156 @@ Yang masih perlu dilakukan:
 - [ ] Jalankan ulang bila implementasi PSAR atau definisi filter volatilitas berubah.
 
 Angka audit ini adalah hasil simulasi yang lebih ketat daripada arsip lama, tetapi belum boleh dianggap hasil final atau jaminan performa live.
+
+
+---
+
+# 17. Audit Lanjutan Berkelanjutan — 1 November sampai 11 November 2026
+
+**Status: CONTINUATION_AUDIT_V2 — PROVISIONAL / BELUM FINAL.**
+
+Bagian ini melanjutkan audit harian ERAUSDT dari Oktober. Posisi #49 yang masih terbuka pada 31 Oktober dibawa ke November dan ditutup pada 1 November. Posisi, loss streak, dan cooldown tidak di-reset saat pergantian tanggal. Cutoff audit: **2026-11-11 07:50 UTC (15:50 WITA)**. Candle 1M terakhir yang sudah selesai adalah 07:49 UTC; candle 5M yang belum selesai tidak digunakan untuk sinyal.
+
+Bagian ini adalah kelanjutan dari ledger audit harian dan bukan pengganti otomatis eksperimen independen atau AUDIT_RUN_V1 pada bagian 9–16. Warm-up PSAR pada run ini dimulai 19 Oktober 2026, bukan 25 Agustus atau sebelum 1 September. Hasilnya masih provisional dan perlu dihitung ulang dengan histori penuh serta implementasi PSAR bot yang sudah diverifikasi.
+
+## 17.1 Parameter dan metode
+
+| Parameter | Nilai |
+|---|---:|
+| Symbol | ERAUSDT USDT-M Perpetual |
+| Periode kelanjutan | 2026-11-01 00:00 sampai 2026-11-11 07:50 UTC |
+| Posisi awal | #49 SHORT, dibuka 2026-10-30 07:00 UTC |
+| Notional | 100 USDT per entry |
+| Compounding | Tidak |
+| TP / SL | 7% / 5% |
+| PSAR | Step 0.01, Maximum 0.10 |
+| Trend / entry timeframe | 1H / 5M |
+| Volatility filter | Rolling 24 jam, 5–30% |
+| Fee | 0.05% per sisi |
+| Slippage | Estimasi 0.05% per sisi |
+| Cooldown | 3 loss beruntun → 24 jam |
+| Timezone | UTC |
+
+Aturan eksekusi:
+- Entry berdasarkan fresh PSAR close-cross pada candle 5M yang sudah selesai dan searah dengan candle 1H terakhir yang sudah selesai.
+- Volatilitas memakai 288 candle 5M: `(highest_high - lowest_low) / first_open * 100`. Nilainya dihitung pada waktu sinyal, tanpa memakai candle masa depan.
+- Entry fill dengan slippage adverse: LONG = signal close × 1.0005; SHORT = signal close × 0.9995.
+- Exit diuji kronologis menggunakan candle 1M. Exit fill: LONG × 0.9995; SHORT × 1.0005.
+- Jika TP dan SL sama-sama tersentuh dalam candle 1M yang sama, SL diprioritaskan.
+- Fee exit memakai notional aktual saat exit. Funding dihitung berdasarkan quantity, mark price, funding rate, dan timestamp funding saat posisi terbuka.
+- Maksimal satu posisi aktif. Sinyal ketika posisi aktif atau cooldown berlangsung dilewati.
+- Posisi #49 membawa funding sampai 31 Oktober sebesar -0.29085904 USDT dari audit sebelumnya; funding setelah itu ditambahkan sampai posisi ditutup.
+
+## 17.2 Cakupan data
+
+| Data | Jumlah | Rentang |
+|---|---:|---|
+| Candle 5M | 6,719 | 19 Okt 00:00 – 11 Nov 07:50 UTC |
+| Candle 1H | 560 | 19 Okt – 11 Nov 07:00 UTC |
+| Candle 1M | 14,870 | 1 Nov 00:00 – 11 Nov 07:49 UTC |
+| Funding records | 88 | 30 Okt – 11 Nov 04:00 UTC |
+
+PSAR memakai implementasi custom bergaya Wilder: bull=true, SAR awal dari low candle pertama, EP awal dari high candle pertama, step 0.01 dan maksimum 0.10. Implementasi ini belum dibuktikan identik dengan library atau kode PSAR yang digunakan bot.
+
+## 17.3 Ringkasan hasil 1–11 November
+
+| Metrik | Hasil |
+|---|---:|
+| Posisi awal yang dibawa | #49 SHORT |
+| Trade ditutup dalam periode | 16 |
+| Win / Loss | 7 / 9 |
+| Win rate periode | 43.75% |
+| Gross PnL | +3.1820 USDT |
+| Fee | -1.6180 USDT |
+| Funding net | +1.8660 USDT |
+| **Net PnL periode** | **+3.4300 USDT** |
+| Posisi terbuka pada cutoff | Tidak ada |
+| Sinyal PSAR 5M terdeteksi | 156 |
+| Sinyal searah filter 1H | 73 |
+| Sinyal lolos filter volatilitas | 73 |
+| Sinyal dilewati karena posisi aktif | 51 |
+| Sinyal dilewati karena cooldown | 7 |
+
+Perhitungan: gross PnL - fee + funding = 3.1820 - 1.6180 + 1.8660 = **+3.4300 USDT**. Nilai dibulatkan empat desimal; trade ledger menjadi referensi perhitungan.
+
+## 17.4 Ringkasan harian
+
+Daily range di bawah adalah descriptive range `(daily high - daily low) / daily open * 100`, bukan filter rolling 24 jam yang dipakai saat entry. PnL dikelompokkan berdasarkan waktu exit.
+
+| Tanggal UTC | Open | High | Low | Close | Daily range | Trade selesai | Win | Loss | Net PnL |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 Nov | 0.06703 | 0.07224 | 0.06425 | 0.06551 | 11.92% | 1 | 1 | 0 | +6.4268 |
+| 2 Nov | 0.06552 | 0.06576 | 0.06055 | 0.06173 | 7.95% | 0 | 0 | 0 | 0.0000 |
+| 3 Nov | 0.06173 | 0.06792 | 0.06164 | 0.06438 | 10.17% | 1 | 0 | 1 | -5.9972 |
+| 4 Nov | 0.06438 | 0.06953 | 0.06227 | 0.06868 | 11.28% | 2 | 0 | 2 | -9.5238 |
+| 5 Nov | 0.06868 | 0.07330 | 0.06450 | 0.07017 | 12.81% | 0 | 0 | 0 | 0.0000 |
+| 6 Nov | 0.07017 | 0.07762 | 0.06951 | 0.06985 | 11.56% | 2 | 1 | 1 | +2.8527 |
+| 7 Nov | 0.06985 | 0.07621 | 0.06974 | 0.07246 | 9.26% | 1 | 0 | 1 | -5.5948 |
+| 8 Nov | 0.07242 | 0.08140 | 0.07184 | 0.07529 | 13.20% | 1 | 1 | 0 | +7.9153 |
+| 9 Nov | 0.07530 | 0.07778 | 0.07024 | 0.07038 | 10.01% | 2 | 0 | 2 | -9.4962 |
+| 10 Nov | 0.07039 | 0.08246 | 0.06920 | 0.08009 | 18.84% | 4 | 2 | 2 | +3.1138 |
+| 11 Nov* | 0.08008 | 0.09285 | 0.07757 | 0.08438 | 19.08% | 2 | 2 | 0 | +13.7335 |
+| **Total** | | | | | | **16** | **7** | **9** | **+3.4300** |
+
+*11 November merupakan data parsial sampai 07:50 UTC, bukan satu hari penuh.*
+
+## 17.5 Trade ledger lanjutan
+
+Semua waktu UTC. Fee ditampilkan sebagai biaya positif; Net sudah mengurangi fee dan memasukkan funding.
+
+| ID | Arah | Entry UTC | Harga entry | Exit UTC | Harga exit | Hasil | Gross | Fee | Funding | Net |
+|---:|---|---|---:|---|---:|---|---:|---:|---:|---:|
+| 49 | SHORT | 30 Okt 07:00 | 0.070044960 | 1 Nov 22:24 | 0.065174384 | TP | +6.9535 | 0.0965 | -0.4302 | **+6.4268** |
+| 50 | SHORT | 2 Nov 00:15 | 0.064607680 | 3 Nov 03:20 | 0.067871983 | SL | -5.0525 | 0.1025 | -0.8422 | **-5.9972** |
+| 51 | LONG | 3 Nov 06:20 | 0.065942955 | 4 Nov 03:00 | 0.062614484 | SL | -5.0475 | 0.0975 | +1.4077 | **-3.7373** |
+| 52 | SHORT | 4 Nov 06:50 | 0.064837565 | 4 Nov 15:03 | 0.068113483 | SL | -5.0525 | 0.1025 | -0.6315 | **-5.7865** |
+| 53 | LONG | 5 Nov 22:45 | 0.070625295 | 6 Nov 04:41 | 0.075531281 | TP | +6.9465 | 0.1035 | +0.2478 | **+7.0908** |
+| 54 | LONG | 6 Nov 07:50 | 0.073426695 | 6 Nov 21:07 | 0.069720483 | SL | -5.0475 | 0.0975 | +0.9069 | **-4.2381** |
+| 55 | SHORT | 6 Nov 23:05 | 0.069755105 | 7 Nov 10:04 | 0.073279482 | SL | -5.0525 | 0.1025 | -0.4398 | **-5.5948** |
+| 56 | LONG | 7 Nov 12:55 | 0.075047505 | 8 Nov 08:11 | 0.080260680 | TP | +6.9465 | 0.1035 | +1.0723 | **+7.9153** |
+| 57 | LONG | 8 Nov 11:35 | 0.076748355 | 9 Nov 06:19 | 0.072874482 | SL | -5.0475 | 0.0975 | +0.9580 | **-4.1870** |
+| 58 | SHORT | 9 Nov 07:15 | 0.072193885 | 9 Nov 11:32 | 0.075841481 | SL | -5.0525 | 0.1025 | -0.1542 | **-5.3092** |
+| 59 | SHORT | 9 Nov 12:55 | 0.075042460 | 10 Nov 00:18 | 0.069824383 | TP | +6.9535 | 0.0965 | -0.1013 | **+6.7557** |
+| 60 | SHORT | 10 Nov 00:20 | 0.069425270 | 10 Nov 04:26 | 0.072932982 | SL | -5.0525 | 0.1025 | -0.0665 | **-5.2215** |
+| 61 | SHORT | 10 Nov 05:10 | 0.071864050 | 10 Nov 13:06 | 0.075494981 | SL | -5.0525 | 0.1025 | -0.1084 | **-5.2634** |
+| 62 | LONG | 10 Nov 13:45 | 0.076248105 | 10 Nov 14:47 | 0.081544680 | TP | +6.9465 | 0.1035 | 0.0000 | **+6.8430** |
+| 63 | LONG | 10 Nov 17:00 | 0.079859910 | 11 Nov 04:03 | 0.085407379 | TP | +6.9465 | 0.1035 | +0.0474 | **+6.8905** |
+| 64 | LONG | 11 Nov 05:35 | 0.085912935 | 11 Nov 07:32 | 0.091880877 | TP | +6.9465 | 0.1035 | 0.0000 | **+6.8430** |
+
+## 17.6 Cooldown dan posisi akhir
+
+- Trade #50, #51, dan #52 menghasilkan tiga loss beruntun.
+- Cooldown 24 jam dimulai setelah #52 ditutup pada 4 November 15:03 UTC dan berakhir pada 5 November 15:03 UTC.
+- Tujuh sinyal yang memenuhi syarat dilewati selama cooldown.
+- Entry #53 terjadi setelah cooldown selesai, pada 5 November 22:45 UTC.
+- Setelah itu tidak ada rangkaian tiga loss berturut-turut.
+- Trade terakhir #64 ditutup TP pada 11 November 07:32 UTC.
+- Tidak ada posisi terbuka pada cutoff 11 November 07:50 UTC.
+
+## 17.7 Akumulasi berkelanjutan sampai 11 November
+
+Baseline akhir Oktober dari audit harian sebelumnya adalah 48 trade selesai, 25 win, 23 loss, realized net +56.83829790 USDT. Posisi #49 masih terbuka pada cutoff Oktober sehingga belum masuk realized PnL baseline tersebut.
+
+| Komponen | Nilai |
+|---|---:|
+| Realized net sampai 31 Oktober | +56.8383 USDT |
+| Net trade #49–#64, ditutup 1–11 November | +3.4300 USDT |
+| **Total realized net kumulatif** | **+60.2683 USDT** |
+| Total trade selesai | 64 |
+| Win / Loss | 32 / 32 |
+| Win rate kumulatif | 50.00% |
+| Posisi terbuka | 0 |
+
+Angka kumulatif adalah penjumlahan baseline audit harian sebelumnya dan continuation ledger ini. Karena baseline dan continuation masih memakai PSAR custom yang belum divalidasi terhadap bot, angka kumulatif belum merupakan hasil final terverifikasi.
+
+## 17.8 Validasi yang masih wajib
+
+- [ ] Ambil ulang data 5M/1H dengan warm-up penuh sejak sebelum 1 September dan hitung ulang semua sinyal.
+- [ ] Cocokkan inisialisasi, arah awal, formula reversal, dan warm-up PSAR dengan implementasi bot.
+- [ ] Audit semua sinyal, reset PSAR, dan cooldown menggunakan event log per candle.
+- [ ] Rekonsiliasi funding posisi #49 dan seluruh posisi lain terhadap riwayat exchange.
+- [ ] Verifikasi slippage dengan data bid/ask atau trade tick, bukan hanya estimasi 0.05%.
+- [ ] Hitung ulang periode kontinu 1 September sampai cutoff yang sama dari satu dataset dan satu versi kode.
+- [ ] Hitung equity curve, max drawdown, profit factor, dan metrik LONG/SHORT dari ledger final.
+
+**Jangan gabungkan angka bagian 17 dengan tabel eksperimen independen bagian 9–15 atau AUDIT_RUN_V1 bagian 16 tanpa label versi.** Jika implementasi PSAR atau asumsi eksekusi berubah, jalankan ulang semua periode dan simpan hasil sebagai versi audit baru.
